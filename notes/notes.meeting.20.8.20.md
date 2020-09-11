@@ -1,4 +1,4 @@
-- noi flemming this time
+- no flemming this time
 - what other projects are there
 - try to have it overlapp with other projects that erik is working on
 - try to see if there is a section that can use the project
