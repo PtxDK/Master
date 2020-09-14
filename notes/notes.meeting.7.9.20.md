@@ -62,3 +62,9 @@ write email about what was talked about
 kaggle challenge
 mikai challenge
     segmentation decalthalon
+
+### Email subjects
+dataset findings (unsuccessful)
+text type (article)
+reading material about the heart
+next meeting time monday 8.40
