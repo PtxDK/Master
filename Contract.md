@@ -13,7 +13,7 @@ We have created a Gantt-diagram for having a rough milestone plan, which we will
 
 ## Learning Objectives
 - Annotation of data (where is the hearth chamber)
-- Learning to build our own models/neural networks from scratch
+- Learning to build our own models/neural networks
 - Optimization of hyper parameters in a medical setting
 - Application of neural networks on medical scans
   - CT
