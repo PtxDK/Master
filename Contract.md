@@ -19,3 +19,6 @@ We have created a Gantt-diagram for having a rough milestone plan, which we will
   - CT
   - PET
 - Work with 3d data
+
+## Old notes:
+// and tweak parameters until we have a model that can predict the location of the hearths internal chambers (and possibly the entire hearth), we will describe the process and results in a scientifically written paper which we will submit for scientific review.
