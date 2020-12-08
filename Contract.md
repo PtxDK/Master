@@ -8,7 +8,7 @@ We have attempted to find models for predicting the location of the left ventric
 
 
 ## Our Proposal
-We hypothesize that the task of segmentation of the left ventricle (and ideally other heart chambers) may be approached by the recently proposed multi-planar Unet (MPU) segmentation method that provides a statistically and computationally efficient model for anatomical 3D structures and their appearance. Further, we hypothesize that the performance of the MPU may be improved by combining it with the Probabilistic U-net or other similar.
+We hypothesize that the task of segmentation of the left ventricle (and ideally other heart chambers) may be approached by the recently proposed multi-planar Unet (MPU) segmentation method that provides a statistically and computationally efficient model for anatomical 3D structures and their appearance. Further, we hypothesize that the performance of the MPU may be improved by combining it with the Probabilistic U-net or other similar methods.
 
 
 
