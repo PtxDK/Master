@@ -18,3 +18,11 @@
 - how do we contact them?
 - how much time do we have with them?
 - 
+
+
+Answers:
+
+- Projektet er betinget af Flemming har lovet at levere data.
+- 
+
+
