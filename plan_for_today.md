@@ -1,0 +1,8 @@
+- conact about the person for annotation
+  - contact person for annotation
+- write the tasks into jira
+- start selecting patients
+- write to erik about
+  - questions
+    - how many hours do we have him for?
+    - how do we distribute them

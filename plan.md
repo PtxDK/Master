@@ -1,0 +1,83 @@
+# Plan
+- Retrival of Data
+  - login to syng via
+  - select patitents
+  - start 5
+  - end 40-80
+  - transfer to titans
+  - notes for selection
+    - Rb
+    - stress scan
+    - rest scan
+    - AC_CT_CARDIAC_1
+
+- Annontation of data
+  - contact person about annotations
+    - talk to flemming about the perosn to talk to about annotations
+  - annotate the data
+    - only the left ventricle
+    - which program to use for annotation
+      - find out which program to use for annotation
+    - how do we export/save data
+    - **?**does the data need to leave the titans?
+  - what is the file format output?
+  - which file format should it be
+
+- Load data into tensorflow
+  - setup venv
+  - select tensorflow version
+    - which are compatible with the titans
+  - setup project structure
+  - setup gitignore file
+  - any scripts to save here
+  - **?**which titan can we use
+    - queue
+    - or specific titan
+  - setup code to load the data
+  - **?**what format does the image need to be to be loaded into the model
+  - **?**how do we load dicom data into tensorflow
+  - what is the correct classification or regression
+  - what should the output be
+    - image shape
+    - ouptut information
+
+- Build Models
+  - read up on the methods
+    - supporting material
+    - general unet
+    - probabalistic u net
+    - multi planar u-net
+    - shape models
+    - general cardiac information
+  - find the correct loss function for use
+  - are there other loss functions that can be used
+  - code the models
+  - find parameters that can be fine tuned
+  - are there other methods that can augment the above
+  - lookup if there are any pretrained versions that can help
+  - train the model
+  - prpare loss function
+  - setup train to allow for different models
+    - do different models need different dataloading
+
+- Metric Selection
+  - save some of the examples from the training epochs
+  - save the weights from different epochs
+  - what metrics are interesting to represent information
+  - basic loss or acuracy graph across epochs
+  - what areas of the heart are being used
+
+- Write thesis
+  - structure Sections
+  - what type are we going for
+    - article **vs**
+    - report
+  - what sections are there to write
+    - general information
+    - medical information
+      - structure of heart
+      - technical that affect our setup
+    - model specific information
+  - rereading thesis
+  - editing
+  - 
