@@ -5,6 +5,7 @@ cachetools==4.2.1
 certifi==2020.12.5
 chardet==4.0.0
 decorator==4.4.2
+dicom2nifti==2.2.12
 flatbuffers==1.12
 gast==0.3.3
 google-auth==1.27.0
@@ -37,6 +38,7 @@ protobuf==3.15.2
 ptyprocess==0.7.0
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
+pydicom==2.1.2
 Pygments==2.8.0
 pyparsing==2.4.7
 python-dateutil==2.8.1
