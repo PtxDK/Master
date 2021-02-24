@@ -1,13 +1,13 @@
 #%%
 import tensorflow as tf
 from tensorflow.keras.layers import *
-
-# from tensorflow import keras as K
+from heartnet.layers import CropConcatLayer
 
 
 #%%
 class UNet2D(tf.keras.Model):
-    def __init__(self, num_classes, num_filters, depth, img_size: int, **kwargs) -> None:
+    def __init__(self, num_classes, num_filters, depth, img_size: int,
+                 **kwargs) -> None:
         super().__init__(**kwargs)
         self.num_classes = num_classes
         self.num_filters = num_filters
@@ -32,15 +32,15 @@ class UNet2D(tf.keras.Model):
         for i in range(1, self.depth):
             x = UpSampling2D()(x)
             print(x.shape)
+            test = CropConcatLayer(xs[-i], x)
             concat = Concatenate()
-            x = concat([
-                xs[(-i)], x
-            ])
+            x = concat([xs[(-i)], x])
             filters /= 2
             print(x.shape)
             x = UpSampling2D()(x)
             print(x.shape)
         output = Conv2D(2, 1)(x)
+        print(output.shape)
         return [inputs], [output]
 
     def init_model(self):
@@ -48,8 +48,3 @@ class UNet2D(tf.keras.Model):
 
     def call(self):
         pass
-
-
-#%%
-net = UNet2D(2, 64, 5, 572)
-net.create_model()
