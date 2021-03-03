@@ -1,3 +1,6 @@
 {
-  "python.pythonPath": "/homes/pmcd/venv/master/bin/python"
+  "python.pythonPath": "/homes/pmcd/venv/master/bin/python",
+  "python.analysis.extraPaths": [
+    "/homes/pmcd/Documents/Master/code/heartnet"
+  ]
 }
