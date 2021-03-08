@@ -1,4 +1,4 @@
-from tensorflow.keras import *
+from tensorflow.keras import layers
 
 
 class CropConcatLayer(layers.Layer):
