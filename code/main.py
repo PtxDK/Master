@@ -2,20 +2,73 @@
 #%%
 print("loading imports")
 # from mpunet.evaluate.metrics import dice, sparse_mean_fg_f1
+from mpunet.logging.default_logger import ScreenLogger
 from mpunet.models import UNet
 from mpunet.evaluate.metrics import *
 from mpunet.callbacks import ValDiceScores
+from mpunet.utils.utils import highlighted
 import numpy as np
-from heartnet.data.base_loader import base_loader
 import tensorflow as tf
 from tensorflow.keras.losses import SparseCategoricalCrossentropy
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras import *
 import pathlib
 import nibabel as nib
+from tensorflow.python.keras.callbacks import Callback
 
 #%%
 print("setting up dataset")
+
+
+class DiceScores(Callback):
+    """
+    Similar to Validation, but working on an array of data instead of
+    internally sampling from a validation sequence generator.
+
+    On epoch end computes the mean dice coefficient and adds to following log
+    entry:
+    logs["val_dice"] = mean_dice
+    """
+
+    def __init__(self, validation_data, n_classes, logger=None):
+        """
+        Args:
+            validation_data: A tuple (X, y) of two ndarrays of validation data
+                             and corresponding labels.
+                             Any shape accepted by the model.
+                             Labels must be integer targets (not one-hot)
+            n_classes:       Number of classes, including background
+            batch_size:      Batch size used for prediction
+            logger:          An instance of a MultiPlanar Logger that prints to screen
+                             and/or file
+        """
+        super().__init__()
+        self.logger = logger or ScreenLogger()
+        self.data = validation_data
+        self.n_classes = n_classes
+        self.scores = []
+
+    def eval(self):
+        dice = []
+        for x, y in self.data:
+            pred = self.model.predict(x, verbose=0)
+            dices = dice_all(
+                y, pred.argmax(-1), n_classes=self.n_classes, ignore_zero=True
+            )
+            dice.append(dices)
+        return np.stack(dice)
+
+    def on_epoch_end(self, epoch, logs={}):
+        scores = self.eval()
+        mean_dice = scores.mean()
+        s = "Mean dice for epoch %d: %.4f\nPr. class: %s" % (
+            epoch, mean_dice, scores[0,0]
+        )
+        self.logger(highlighted(s))
+        self.scores.append(mean_dice)
+
+        # Add to log
+        logs["val_dice"] = mean_dice
 
 
 def load_img(flip):
@@ -57,34 +110,39 @@ def base_loader(base_dir, split_slices=True):
 
 #%%
 print("setting up model")
-net = UNet(2, depth=4, dim=128)
-# ms = [metrics.CategoricalAccuracy(), dice, sparse_mean_fg_f1]
+N_CLASSES = 2
+net = UNet(N_CLASSES, depth=4, dim=128)
 loss = SparseCategoricalCrossentropy(from_logits=True)
 opt = Adam(5.0e-05, 0.9, 0.999, 1e-8, decay=0.0)
-net.compile(opt, loss=loss, metrics=[], run_eagerly=True)
+net.compile(opt, loss=loss, metrics=["accuracy"], run_eagerly=True)
 dataset = base_loader("/homes/pmcd/Peter_Patrick3/train")
 BATCH_SIZE = 16
 EPOCHS = 500
 DATASET_LEN = 46
 IMAGES_PER_ENTRY = 111
+train_dataset = dataset.take(int(0.8 * (DATASET_LEN*111))).batch(BATCH_SIZE)
+val_dataset = dataset.skip(int(0.8 * (DATASET_LEN*111))).batch(BATCH_SIZE)
 cbs = [
+    DiceScores(val_dataset, N_CLASSES),
     callbacks.ReduceLROnPlateau(
-        patience=2, factor=0.90, verbose=1, monitor="val_loss", mode="max"
+        patience=2, factor=0.90, verbose=1, monitor="val_dice", mode="max"
     ),
-    callbacks.
-    ModelCheckpoint("./model/base_2d_unet_{epoch:02d}_loss_{loss:02f}.h5"),
+    callbacks.ModelCheckpoint(
+        "./model/base_2d_unet_{epoch:02d}_val_loss_{val_loss:02f}.h5"
+    ),
     callbacks.EarlyStopping(
-        monitor='val_loss', min_delta=0, patience=15, verbose=1, mode='max'
-    ),
+        monitor='val_dice', min_delta=0, patience=15, verbose=1, mode='max'
+    )
 ]
-train_dataset = dataset.take(int(0.8 * (DATASET_LEN*111)))
-val_dataset = dataset.skip(int(0.8 * (DATASET_LEN*111)))
+
 #%%
 print("starting training")
 net.fit(
-    train_dataset.batch(BATCH_SIZE),
-    validation_data=val_dataset.batch(BATCH_SIZE),
+    train_dataset,
+    validation_data=val_dataset,
     epochs=EPOCHS,
     callbacks=cbs,
     batch_size=BATCH_SIZE,
 )
+
+# %%
