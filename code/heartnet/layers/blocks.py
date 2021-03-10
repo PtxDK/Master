@@ -10,6 +10,7 @@ class ConvBlock(layers.Layer):
 
     def call(self, x):
         x = self.conv1(x)
+        print(x.shape)
         return self.conv2(x)
 
 

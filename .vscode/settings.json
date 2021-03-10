@@ -1,3 +1,6 @@
 {
-  "python.pythonPath": "C:\\Users\\Peter\\venv\\master\\Scripts\\python.exe"
+  "python.pythonPath": "/homes/pmcd/venv/master/bin/python",
+  "python.analysis.extraPaths": [
+    "/homes/pmcd/Documents/Master/code/heartnet"
+  ]
 }
