@@ -62,7 +62,7 @@ class DiceScores(Callback):
         scores = self.eval()
         mean_dice = scores.mean()
         s = "Mean dice for epoch %d: %.4f\nPr. class: %s" % (
-            epoch, mean_dice, scores[0,0]
+            epoch, mean_dice, scores[0, 0]
         )
         self.logger(highlighted(s))
         self.scores.append(mean_dice)
@@ -128,7 +128,11 @@ cbs = [
         patience=2, factor=0.90, verbose=1, monitor="val_dice", mode="max"
     ),
     callbacks.ModelCheckpoint(
-        "./model/base_2d_unet_{epoch:02d}_val_loss_{val_loss:02f}.h5"
+        "./model/base_2d_unet.h5",
+        save_best_only=True,
+        save_weights_only=True,
+        monitor="val_dice",
+        mode="max"
     ),
     callbacks.EarlyStopping(
         monitor='val_dice', min_delta=0, patience=15, verbose=1, mode='max'
