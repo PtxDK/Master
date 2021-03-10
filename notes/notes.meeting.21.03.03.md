@@ -1,0 +1,32 @@
+- When is the turnin date for the report
+  - erik has low influence
+  - studie admin will decide when the date for the turnin is
+  - 31st may
+- when can we expect
+- really focus on the main focus of the report
+- can maybe attempt other things after
+  - UNet 3D
+  - predefined vectors in 3D
+  - shape model
+- always be working on the report
+  - hypothesis
+  - test
+  - result
+- write down what we are considering along the way
+- consider the leanness of the model
+  - how much should the computing power of the machine be
+- make sure what we do in the beginning to make sure that the choices made are consistent
+- **is there a clinical guideline that we need to adhere to**
+  - max amount of days before result
+  - data may not leave the hospital
+    - what resources do we have available
+- start from mathias's implementation
+- sparse categorical cross entropy
+  - 2 background classes
+    - inside
+    - outside image
+# For next time
+- look at methods for handling how the slices are made
+  - compare with mathias's method
+- use mathias's package
+- what other methods

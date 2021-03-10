@@ -1,0 +1,41 @@
+# Notes
+- research if there are some improvements to be done on patient selection
+  - who is healthy
+  - who is sick
+- might not be project breaking
+- sick patients are harder to segment
+- how do we go forward with using the segemtation mask 
+  - improve the segmentations
+  - use for diagnostic projects
+- start with the ventricle
+- move to other parts later
+- focus on what methods are used
+  - focus on the computer science aspect
+- use mpunet
+  - what can be further improved
+  - why did it fail?
+    - what is it that makes it fail
+      - what sections of the heart
+- view as 3d image that can be sliced along axes
+- look at using liver to give "context" to model
+  - have subset that has segmentation for both
+- what is the dice score
+  - how good does the metric need to be
+- look at 3D segmentation with unet
+- use some code from perslev
+- plan how we want to annotate the data
+  - what parts to take
+
+- report
+  - introduction
+    - what is the problem
+    - what have others done
+    - what is the method we will use
+    - what problems did they have
+    - what combinations can be done 
+
+- what other things should we consider
+- create tiny set of data to use for testing
+- look at what problems there are with the left ventricle
+  - does the form of it create problems
+  - how 
