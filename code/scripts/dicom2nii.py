@@ -48,7 +48,7 @@ for idx, folder in enumerate(folders):
         json.dump(completed, outfile)
     # break
 
-#%%
+#%% Generate train val and test dataset via symlinks
 for idx, folder in enumerate(glob.glob(f"{base_dir}/all/*")):
     file_name = f"anon{idx}"
     if os.path.exists(f"{folder}/rest.nii.gz"
