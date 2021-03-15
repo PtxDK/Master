@@ -2,4 +2,4 @@
 import subprocess
 import os
 os.chdir("/homes/pmcd/Peter_Patrick3/")
-subprocess.call("mp train --overwrite")
+subprocess.call("mp train --overwrite", shell=True)

@@ -1,5 +1,6 @@
 #%%
 import glob
+from sys import exec_prefix
 import dicom2nifti.convert_dir as conv_dir
 import os
 import shutil
@@ -11,8 +12,6 @@ base_dir = "/homes/pmcd/Peter_Patrick3"
 folders = glob.glob("/homes/pmcd/Peter_Patrick3/DICOM/*/*")
 try:
     os.mkdir("/homes/pmcd/Peter_Patrick3/all")
-    os.mkdir("/homes/pmcd/Peter_Patrick3/labels")
-    os.mkdir("/homes/pmcd/Peter_Patrick3/images")
 except:
     pass
 for idx, folder in enumerate(folders):
@@ -47,17 +46,54 @@ for idx, folder in enumerate(folders):
     with open(f'{out_dir}/data.json', 'w') as outfile:
         json.dump(completed, outfile)
     # break
-
 #%%
-for idx, folder in enumerate(glob.glob(f"{base_dir}/all/*")):
-    file_name = f"anon{idx}"
-    if os.path.exists(f"{folder}/rest.nii.gz"
-                     ) and os.path.exists(f"{folder}/annotations.nii.gz"):
-        os.symlink(
-            f"{folder}/rest.nii.gz",
-            f"{base_dir}/train/images/{file_name}.nii.gz"
-        )
-        os.symlink(
-            f"{folder}/annotations.nii.gz",
-            f"{base_dir}/train/labels/{file_name}.nii.gz"
-        )
+train_split = 0.8
+chances = {
+    "train": train_split * 0.6,
+    "val": train_split * 0.2,
+    "test": train_split * 0.2,
+    "true_test": 1 - train_split
+}
+#%%
+examples = [
+    folder for folder in glob.glob(f"{base_dir}/all/*")
+    if os.path.exists(f"{folder}/rest.nii.gz") and
+    os.path.exists(f"{folder}/annotations.nii.gz")
+]
+data = {}
+sum_val = 0
+for key, value in chances.items():
+    end = sum_val + (len(examples) * value)
+    first_idx = int(sum_val)
+    end_idx = round(end)
+    print(end, end_idx, first_idx, sum_val)
+    sum_val = end_idx
+    data[key] = examples[first_idx:end_idx]
+data[key] = examples[first_idx:]
+print(len([j for i in data.values() for j in i]))
+#%%
+idx = 0
+for ds_name, folders in data.items():
+    ds_base_folder = f"/homes/pmcd/Peter_Patrick3/{ds_name}"
+    try:
+        os.mkdir(ds_base_folder)
+    except:
+        pass
+
+    for folder in folders:
+        file_name = folder.split("/")[-1]
+        try:
+            os.mkdir(f"{ds_base_folder}/images")
+            os.mkdir(f"{ds_base_folder}/labels")
+        except:
+            pass
+        if os.path.exists(f"{folder}/rest.nii.gz"
+                         ) and os.path.exists(f"{folder}/annotations.nii.gz"):
+            os.symlink(
+                f"{folder}/rest.nii.gz",
+                f"{base_dir}/{ds_name}/images/{file_name}.nii.gz"
+            )
+            os.symlink(
+                f"{folder}/annotations.nii.gz",
+                f"{base_dir}/{ds_name}/labels/{file_name}.nii.gz"
+            )
