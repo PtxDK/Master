@@ -16,19 +16,6 @@ net = UNet3D(N_CLASSES, dim=IMG_SIZE, out_activation="linear")
 
 
 #%%
-def load3D(base_dir, output_shape):
-    dataset = base_loader(base_dir, False)
-    dataset = dataset.map(crop_image(output_shape))
-    output_slice_num = (111-output_shape) // 2
-    dataset = dataset.map(
-        lambda x, y:
-        (x[:, :, output_slice_num:output_shape + output_slice_num],
-         y[:, :, output_slice_num:output_shape + output_slice_num])
-    )
-    dataset = dataset.map(
-        lambda x, y: (tf.expand_dims(x, -1), tf.expand_dims(y, -1))
-    )
-    return dataset
 
 
 #%%
