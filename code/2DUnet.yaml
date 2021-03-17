@@ -1,8 +1,13 @@
+extend: "base.yaml"
 data:
   base_folder: /homes/pmcd/Peter_Patrick3
+  splits:
+      - test
+      - train
+      - val
   train: train
-  val: val
   test: test
+  val: val
 
 model: UNet
 
