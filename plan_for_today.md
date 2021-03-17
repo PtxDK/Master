@@ -1,8 +1,9 @@
-- conact about the person for annotation
-  - contact person for annotation
-- write the tasks into jira
-- start selecting patients
-- write to erik about
-  - questions
-    - how many hours do we have him for?
-    - how do we distribute them
+# Extensions to try with models
+- try base models 2d 3d unet with data augmentation
+- add data augmentation to mpunet model
+- write into report about training methods
+  - what is the basis for trying this
+- try with CT scans
+  - upscale the images
+- talk about the report
+  - 

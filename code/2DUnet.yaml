@@ -1,0 +1,14 @@
+data:
+  base_folder: /homes/pmcd/Peter_Patrick3
+  train: train
+  val: val
+  test: test
+
+model: UNet
+
+fit:
+  batch_size: 111
+  loss: 
+    name: SparseCategoricalCrossEntropy
+    from_logits: True
+  
