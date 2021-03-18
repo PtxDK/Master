@@ -1,3 +1,4 @@
+from heartnet.config.base import YamlConfig
 import tensorflow as tf
 import pathlib
 import nibabel as nib
@@ -47,10 +48,13 @@ def load2D(base_dir):
 
 
 load_functions = {"UNet": load2D, "UNet3D": load3D}
-splits = ["train", "test", "val"]
 
-def load_datasets(config):
+
+def load_datasets(config: YamlConfig):
     load_function = load_functions[config["model"]]
-    for key,value in config["data"].items():
-        if key in splits:
-            print(key)
+    ret = {i: None for i in config.splits}
+    base_folder = pathlib.Path(config["data"]["base_folder"])
+    for split in config.splits:
+        ret[split] = load_function(base_folder / split
+                                  ).batch(config["fit"]["batch_size"])
+    return ret

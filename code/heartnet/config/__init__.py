@@ -1,1 +1,1 @@
-from .loader import YamlConfig
+from .base import YamlConfig
