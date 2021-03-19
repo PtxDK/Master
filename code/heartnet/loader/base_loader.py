@@ -48,13 +48,21 @@ def load2D(base_dir):
 
 
 load_functions = {"UNet": load2D, "UNet3D": load3D}
+splits = ["train_folder", "val_folder", "test_folder"]
 
 
 def load_datasets(config: YamlConfig):
-    load_function = load_functions[config["model"]]
-    ret = {i: None for i in config.splits}
+    load_function = load_functions[config["model"]["model"].__class__.__name__]
+    ret = {i: None for i in splits}
     base_folder = pathlib.Path(config["data"]["base_folder"])
-    for split in config.splits:
-        ret[split] = load_function(base_folder / split
-                                  ).batch(config["fit"]["batch_size"])
-    return ret
+    for split in splits:
+        ds = load_function(base_folder / config["data"][split])
+        ds = ds.batch(config["fit"]["batch_size"])
+        # ds = ds.map(
+        #     lambda x, y: tf.py_function(
+        #         apply_augmentations(config["data"]["augmentations"]), [x, y],
+        #         [tf.float32, tf.float32]
+        #     )
+        # )
+        ret[split] = ds
+    return list(ret.values())

@@ -1,0 +1,23 @@
+data:
+  example:
+    num_slices: 111
+    image_size: [128, 128]
+  base_folder: /homes/pmcd/Peter_Patrick3
+  train_folder: train
+  test_folder: test
+  val_folder: val
+name: base
+model:
+  metrics:
+    - accuracy
+    - !!python/object:heartnet.metrics.Dice {}
+    - !!python/object:heartnet.metrics.FGRecall {}
+    - !!python/object:heartnet.metrics.FGPrecision {}
+    - !!python/object:heartnet.metrics.FGF1Score {}
+  loss:
+    !!python/object:tensorflow.keras.losses.SparseCategoricalCrossentropy {
+      from_logits: False,
+    }
+fit:
+  epochs: 500
+  batch_size: 16

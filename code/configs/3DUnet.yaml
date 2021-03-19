@@ -1,0 +1,9 @@
+!!extend:./configs/base.yaml
+model:
+  model:
+    !!python/object:mpunet.models.3DUNet {
+      n_classes: 2,
+      dim: 96,
+      depth: 4,
+      out_activation: softmax,
+    }

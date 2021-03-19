@@ -19,6 +19,7 @@ net.compile(opt, loss=loss, metrics=["accuracy", dice], run_eagerly=True)
 train_ds = load2D("/homes/pmcd/Peter_Patrick3/train").batch(BATCH_SIZE)
 val_ds = load2D("/homes/pmcd/Peter_Patrick3/val").batch(BATCH_SIZE)
 test_ds = load2D("/homes/pmcd/Peter_Patrick3/test").batch(BATCH_SIZE)
+
 cbs = [
     callbacks.ModelCheckpoint(
         "./model/base_2d_unet.h5",
