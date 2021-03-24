@@ -5,7 +5,7 @@ import nibabel as nib
 from .preprocess import *
 
 
-def base_loader(base_dir):
+def base_loader(base_dir, **kwargs):
     base_dir = pathlib.Path(base_dir)
     images = (base_dir / "images")
     labels = (base_dir / "labels")
@@ -20,6 +20,9 @@ def base_loader(base_dir):
     def load_img(x, y):
         ret_x = nib.load(x.numpy().decode("utf-8")).get_fdata()
         ret_y = nib.load(y.numpy().decode("utf-8")).get_fdata()
+        if kwargs.get("augmentations", []):
+            for aug in kwargs.get("augmentations", []):
+                ret_x, ret_y = aug(ret_x, ret_y)
         return ret_x, ret_y
 
     def get_img(x, y):
@@ -51,18 +54,18 @@ load_functions = {"UNet": load2D, "UNet3D": load3D}
 splits = ["train_folder", "val_folder", "test_folder"]
 
 
-def load_datasets(config: YamlConfig):
-    load_function = load_functions[config["model"]["model"].__class__.__name__]
-    ret = {i: None for i in splits}
-    base_folder = pathlib.Path(config["data"]["base_folder"])
-    for split in splits:
-        ds = load_function(base_folder / config["data"][split])
-        ds = ds.batch(config["fit"]["batch_size"])
-        # ds = ds.map(
-        #     lambda x, y: tf.py_function(
-        #         apply_augmentations(config["data"]["augmentations"]), [x, y],
-        #         [tf.float32, tf.float32]
-        #     )
-        # )
-        ret[split] = ds
-    return list(ret.values())
+# def load_datasets(**kwargs):
+#     load_function = load_functions[kwargs.get("model_name")]
+#     ret = {i: None for i in splits}
+#     base_folder = pathlib.Path(kwargs.get("base_folder"))
+#     for split in splits:
+#         ds = load_function(base_folder / config["data"][split])
+#         ds = ds.batch(config["fit"]["batch_size"])
+#         # ds = ds.map(
+#         #     lambda x, y: tf.py_function(
+#         #         apply_augmentations(config["data"]["augmentations"]), [x, y],
+#         #         [tf.float32, tf.float32]
+#         #     )
+#         # )
+#         ret[split] = ds
+#     return list(ret.values())
