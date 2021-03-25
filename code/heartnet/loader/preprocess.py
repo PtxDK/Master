@@ -11,10 +11,11 @@ def crop_image_to_shape(o):
     return func
 
 
-def crop_slices(offset, size):
+def crop_slices(size):
 
     def func(x, y):
-        (x[:, :, offset:size + offset], y[:, :, offset:size + offset])
+        offset = (tf.shape(x)[-1] - size) // 2
+        return (x[:, :, offset:size + offset], y[:, :, offset:size + offset])
 
     return func
 
@@ -34,9 +35,9 @@ def expand_dims(x, y):
 def apply_augmentations(augmentations):
 
     def func(x, y):
-        print(x,y)
-        x,y = x.numpy(), y.numpy()
+        x, y = x.numpy(), y.numpy()
         for augmentation in augmentations:
-            x, y = augmentation(x,y)
+            x, y = augmentation(x, y)
         return x, y
+
     return func
