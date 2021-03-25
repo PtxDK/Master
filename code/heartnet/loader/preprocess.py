@@ -20,7 +20,7 @@ def crop_slices(size):
     return func
 
 
-def reshape_slices(x, y):
+def transpose_slices(x, y):
     return tf.transpose(x, [2, 0, 1]), tf.transpose(y, [2, 0, 1])
 
 
@@ -30,14 +30,3 @@ def split_slices(x, y):
 
 def expand_dims(x, y):
     return (tf.expand_dims(x, -1), tf.expand_dims(y, -1))
-
-
-def apply_augmentations(augmentations):
-
-    def func(x, y):
-        x, y = x.numpy(), y.numpy()
-        for augmentation in augmentations:
-            x, y = augmentation(x, y)
-        return x, y
-
-    return func

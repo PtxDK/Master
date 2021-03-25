@@ -1,3 +1,4 @@
+from typing import List
 from heartnet.callbacks.base import CSVEvaluateLogger
 from heartnet.loader.base_loader import *
 from ..metrics.classes import *
@@ -6,7 +7,7 @@ from tensorflow.keras import *
 
 class BaseModelTraining(object):
 
-    def __init__(self, model, name="base", loss=None) -> None:
+    def __init__(self, model, name="base", loss=None, augmentations=[]) -> None:
         super().__init__()
         self.name = name
         self.model: models.Model = model
@@ -25,7 +26,7 @@ class BaseModelTraining(object):
         self.optimizer = optimizers.Adam(
             1e-4 * (mult), 0.9, 0.999, 1e-8, decay=0.0
         )
-        self.augmentations = []
+        self.augmentations = augmentations
         self._file_name = f"{self.model_name}_{self.name}"
         self.callbacks = [
             callbacks.CSVLogger(f"./logs/{self._file_name}.csv"),
@@ -39,7 +40,7 @@ class BaseModelTraining(object):
             callbacks.EarlyStopping(
                 monitor='val_dice',
                 min_delta=0,
-                patience=15,
+                patience=25,
                 verbose=1,
                 mode='max'
             ),
@@ -52,7 +53,6 @@ class BaseModelTraining(object):
                 mode="max"
             ),
         ]
-        self._train_ds, self._val_ds, self._test_ds = None, None, None
 
     @property
     def model_name(self):
@@ -77,8 +77,8 @@ class BaseModelTraining(object):
 
     def load_weights(self):
         self.model.load_weights(f"./model/{self._file_name}.h5")
-    
-    def load_datasets(self):
+
+    def load_datasets(self) -> List[tf.data.Dataset]:
         load_function = load_functions[self.model_name]
         splits = [
             self.data_train_folder, self.data_val_folder, self.data_test_folder
@@ -88,9 +88,11 @@ class BaseModelTraining(object):
         for split in splits:
             ds = load_function(
                 base_folder / split,
-                output_shape=self.model.img_shape[0],
-                augmentations=self.augmentations if split == "test" else []
+                output_dim=self.model.img_shape[0],
+                augmentations=self.augmentations if split == "train" else []
             )
+            if self.augmentations and split == "train":
+                ds = ds.repeat(3)
             if self.batch_size:
                 ds = ds.batch(self.batch_size)
             ret[split] = ds.prefetch(-1)
