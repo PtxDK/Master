@@ -58,7 +58,9 @@ class BaseModelTraining(object):
     def model_name(self):
         return self.model.__class__.__name__
 
-    def setup(self):
+    def setup(self, load_weights=False):
+        if load_weights:
+            self.load_weights()
         self._train_ds, self._val_ds, self._test_ds = self.load_datasets()
         self.model.compile(self.optimizer, self.loss, metrics=self.metrics)
 

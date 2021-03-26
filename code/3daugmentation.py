@@ -9,6 +9,6 @@ base3D.batch_size = 1
 base3D.augmentations = [
     Elastic3D(alpha=[0, 450], sigma=[20, 30], apply_prob=0.333)
 ]
-base3D.setup()    
-base3D.train()
+base3D.setup(True)    
+# base3D.train()
 base3D.evaluate()
