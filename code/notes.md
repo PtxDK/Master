@@ -17,6 +17,10 @@
   - augmentations
     - elastic2d
 
+# Evaluation
+- 
+
+
 # Data augmentations
 - what is the best method to apply data augmentation?
   - apply randomly each time an example is taken
@@ -36,7 +40,7 @@
     - can use all the data in each example
   - Other
     - need to implement 3d version of SPN
-- Transformer
+- Transformer(potential: unlikely/stretch)
   - Basis/benefits
     - have shown to work well in NLP and later vision tasks
   - Drawbacks
