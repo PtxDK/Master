@@ -1,5 +1,0 @@
-data:
-  example:
-    num_slices: 111
-    image_size: !!python/tuple [128,128]
-  base_folder: /homes/pmcd/Peter_Patrick3

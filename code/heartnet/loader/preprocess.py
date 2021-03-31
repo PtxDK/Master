@@ -11,15 +11,16 @@ def crop_image_to_shape(o):
     return func
 
 
-def crop_slices(offset, size):
+def crop_slices(size):
 
     def func(x, y):
-        (x[:, :, offset:size + offset], y[:, :, offset:size + offset])
+        offset = (tf.shape(x)[-1] - size) // 2
+        return (x[:, :, offset:size + offset], y[:, :, offset:size + offset])
 
     return func
 
 
-def reshape_slices(x, y):
+def transpose_slices(x, y):
     return tf.transpose(x, [2, 0, 1]), tf.transpose(y, [2, 0, 1])
 
 
