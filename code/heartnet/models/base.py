@@ -7,7 +7,7 @@ from tensorflow.keras import *
 
 class BaseModelTraining(object):
 
-    def __init__(self, model, name="base", loss=None, augmentations=[]) -> None:
+    def __init__(self, model, name, loss=None, augmentations=[]) -> None:
         super().__init__()
         self.name = name
         self.model: models.Model = model
@@ -27,6 +27,7 @@ class BaseModelTraining(object):
             1e-4 * (mult), 0.9, 0.999, 1e-8, decay=0.0
         )
         self.augmentations = augmentations
+        self.aug_repeats = 1
         self._file_name = f"{self.model_name}_{self.name}"
         self.callbacks = [
             callbacks.CSVLogger(f"./logs/{self._file_name}.csv"),
@@ -93,8 +94,23 @@ class BaseModelTraining(object):
                 output_dim=self.model.img_shape[0],
                 augmentations=self.augmentations if split == "train" else []
             )
-            if self.augmentations and split == "train":
-                ds = ds.repeat(3)
+            if split == "train":
+                rep_ds, aug_ds = None, None
+                if self.concat_augs:
+                    ds = load_function(
+                        base_folder / split,
+                        output_dim=self.model.img_shape[0],
+                    )
+                    aug_ds = load_function(
+                        base_folder / split,
+                        output_dim=self.model.img_shape[0],
+                        augmentations=self.augmentations
+                    )
+                    
+                if self.aug_repeats:
+                    ds = ds.repeat(self.aug_repeats)
+                if self.concat_augs and aug_ds:
+                    ds = ds.concatenate(aug_ds)
             if self.batch_size:
                 ds = ds.batch(self.batch_size)
             ret[split] = ds.prefetch(-1)
