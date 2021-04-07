@@ -27,7 +27,8 @@ class BaseModelTraining(object):
             1e-4 * (mult), 0.9, 0.999, 1e-8, decay=0.0
         )
         self.augmentations = augmentations
-        self.aug_repeats = 1
+        self.aug_repeats = 0
+        self.concat_augs = False
         self._file_name = f"{self.model_name}_{self.name}"
         self.callbacks = [
             callbacks.CSVLogger(f"./logs/{self._file_name}.csv"),
@@ -107,7 +108,7 @@ class BaseModelTraining(object):
                         augmentations=self.augmentations
                     )
                     
-                if self.aug_repeats:
+                if self.aug_repeats > 1:
                     ds = ds.repeat(self.aug_repeats)
                 if self.concat_augs and aug_ds:
                     ds = ds.concatenate(aug_ds)
