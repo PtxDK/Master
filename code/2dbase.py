@@ -8,8 +8,8 @@ base = BaseModelTraining(
     UNet(2, depth=4, dim=128, out_activation="softmax", complexity_factor=2),
     "base"
 )
-# base.batch_size = 16
-# base.setup()
-# base.train()
-# base.evaluate()
+base.batch_size = 16
+base.setup()
+base.train()
+base.evaluate()
 #%%
