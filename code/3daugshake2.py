@@ -8,7 +8,7 @@ for i in range(3):
     )
     base3D.batch_size = 1
     base3D.augmentations = [
-        Elastic3D(alpha=[0, 450], sigma=[20, 30], apply_prob=0.333)
+        Elastic3D(alpha=[0, 25], sigma=[20, 30], apply_prob=0.333)
     ]
     base3D.aug_repeats = 0
     base3D.setup()

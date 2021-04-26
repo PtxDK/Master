@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 from mpunet.models import UNet3D
 from heartnet.models.base import BaseModelTraining
-from heartnet.augmentation.elastic import Elastic3D
 for i in range(3):
     base3D = BaseModelTraining(
         UNet3D(2, dim=112, out_activation="softmax"), name=f"pad{i}"
