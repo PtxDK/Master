@@ -1,5 +1,3 @@
-
-
 # Techniques
 - general
   - look at a unet as an encoder decoder
@@ -67,6 +65,7 @@
     - elastic2d
     - need to test for the results
 # Training
+## Hyper parameter tuning discussion
 
 # Results
 - compare the dsc scores
@@ -93,7 +92,7 @@
 # Data augmentations
 - what is the best method to apply data augmentation?
   - apply randomly each time an example is taken
-    - reapeat the dataset multiple times
+    - repeat the dataset multiple times
       - can cause the problem of overfitting
   - build dataset without augmentations once
     - some core examples might not be generated
@@ -114,3 +113,5 @@
     - have shown to work well in NLP and later vision tasks
   - Drawbacks
   - Other
+- Use with a denoising model
+- does more data improve the accuracy
