@@ -47,11 +47,9 @@ class FGF1Score(MeanMetricWrapper):
             cm = tf.math.confusion_matrix(
                 tf.reshape(y_true, [-1]), tf.reshape(y_pred, [-1])
             )
-
             # Get precisions
             TP = tf.linalg.diag_part(cm)
             precisions = TP / tf.reduce_sum(cm, axis=0)
-
             # Get recalls
             TP = tf.linalg.diag_part(cm)
             recalls = TP / tf.reduce_sum(cm, axis=1)

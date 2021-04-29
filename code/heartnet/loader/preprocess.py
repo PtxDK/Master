@@ -15,7 +15,7 @@ def crop_slices(size):
 
     def func(x, y):
         offset = (tf.shape(x)[-1] - size) // 2
-        return (x[:, :, offset:size + offset], y[:, :, offset:size + offset])
+        return (x[:, :, offset:size + offset], y)
 
     return func
 

@@ -1,4 +1,6 @@
 from typing import List
+
+from numpy.lib.function_base import append
 from heartnet.callbacks.base import CSVEvaluateLogger
 from heartnet.loader.base_loader import *
 from ..metrics.classes import *
@@ -75,7 +77,10 @@ class BaseModelTraining(object):
         )
 
     def evaluate(self):
-        cbs = [CSVEvaluateLogger(f"./logs/{self._file_name}-evaluate.csv")]
+        cbs = [
+            CSVEvaluateLogger(f"./logs/{self._file_name}-evaluate.csv"),
+            CSVEvaluateLogger(f"./logs/full-evaluate.csv", append=True)
+        ]
         if self._test_ds:
             self.model.evaluate(self._test_ds, callbacks=cbs)
 
@@ -107,7 +112,7 @@ class BaseModelTraining(object):
                         output_dim=self.model.img_shape[0],
                         augmentations=self.augmentations
                     )
-                    
+
                 if self.aug_repeats > 1:
                     ds = ds.repeat(self.aug_repeats)
                 if self.concat_augs and aug_ds:
