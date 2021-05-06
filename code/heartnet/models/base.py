@@ -9,7 +9,9 @@ from tensorflow.keras import *
 
 class BaseModelTraining(object):
 
-    def __init__(self, model, name, loss=None, augmentations=[]) -> None:
+    def __init__(
+        self, model, name, loss=None, augmentations=[], full=False
+    ) -> None:
         super().__init__()
         self.name = name
         self.model: models.Model = model
@@ -20,6 +22,7 @@ class BaseModelTraining(object):
         self.data_train_folder = "train"
         self.data_val_folder = "val"
         self.data_test_folder = "test"
+        self.data_final_test_folder = "true_test"
         self.batch_size = 1
         self.metrics = [Dice(), FGF1Score(), FGRecall(), FGPrecision()]
         self.loss = loss or losses.SparseCategoricalCrossentropy()
@@ -31,6 +34,7 @@ class BaseModelTraining(object):
         self.augmentations = augmentations
         self.aug_repeats = 0
         self.concat_augs = False
+        self.final = full
         self._file_name = f"{self.model_name}_{self.name}"
         self.callbacks = [
             callbacks.CSVLogger(f"./logs/{self._file_name}.csv"),
@@ -65,7 +69,13 @@ class BaseModelTraining(object):
     def setup(self, load_weights=False):
         if load_weights:
             self.load_weights()
-        self._train_ds, self._val_ds, self._test_ds = self.load_datasets()
+        self._train_ds, self._val_ds, self._test_ds, self._final_ds = self.load_datasets(
+        )
+
+        if self.final:
+            self._train_ds = self._train_ds.concatenate(self._val_ds)
+            self._val_ds = self._test_ds
+            self._test_ds = self._final_ds
         self.model.compile(self.optimizer, self.loss, metrics=self.metrics)
 
     def train(self):
@@ -78,7 +88,9 @@ class BaseModelTraining(object):
 
     def evaluate(self):
         cbs = [
-            CSVEvaluateLogger(f"./logs/{self._file_name}-evaluate.csv"),
+            CSVEvaluateLogger(
+                f"./logs/{self._file_name}-{'final' if self.final else ''}-evaluate.csv"
+            ),
             CSVEvaluateLogger(f"./logs/full-evaluate.csv", append=True)
         ]
         if self._test_ds:
@@ -90,7 +102,8 @@ class BaseModelTraining(object):
     def load_datasets(self) -> List[tf.data.Dataset]:
         load_function = load_functions[self.model_name]
         splits = [
-            self.data_train_folder, self.data_val_folder, self.data_test_folder
+            self.data_train_folder, self.data_val_folder, self.data_test_folder,
+            self.data_final_test_folder
         ]
         ret = {i: None for i in splits}
         base_folder = pathlib.Path(self.data_base_folder)
