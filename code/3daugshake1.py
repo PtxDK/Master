@@ -3,7 +3,7 @@ from mpunet.models import UNet3D
 from heartnet.models.base import BaseModelTraining
 from heartnet.augmentation.elastic import Elastic3D
 for cf in [1, 2, 3]:
-    for depth in [4]:
+    for depth in [3, 4]:
         for sigma_lower in [0, 20]:
             for sigma in [10,20,30]:
                 for i in range(3):
