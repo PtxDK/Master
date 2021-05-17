@@ -7,7 +7,6 @@ from mpunet.evaluate.metrics import one_class_dice, sparse_fg_recall, sparse_fg_
 class Dice(MeanMetricWrapper):
 
     def __init__(self, name="dice", dtype=None, **kwargs):
-        # smooth = tf.constant(smooth, tf.int64)
 
         def fn(true, pred):
             pred = tf.cast(tf.argmax(pred, axis=-1), tf.float32)
@@ -60,3 +59,5 @@ class FGF1Score(MeanMetricWrapper):
             return tf.math.reduce_mean(f1s[1:])
 
         super().__init__(fn, name=name, dtype=dtype, **kwargs)
+        
+        

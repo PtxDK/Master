@@ -1,7 +1,7 @@
 from typing import List
 
 from numpy.lib.function_base import append
-from heartnet.callbacks.base import CSVEvaluateLogger
+from heartnet.callbacks.base import CSVEvaluateLogger, DicePerPerson
 from heartnet.loader.base_loader import *
 from ..metrics.classes import *
 from tensorflow.keras import *
@@ -88,10 +88,11 @@ class BaseModelTraining(object):
 
     def evaluate(self, final=False):
         cbs = [
+            # DicePerPerson(),
             CSVEvaluateLogger(
                 f"./logs/{self._file_name}{'-final' if self.final or final else ''}-evaluate.csv"
             ),
-            CSVEvaluateLogger(f"./logs/full-evaluate.csv", append=True)
+            # CSVEvaluateLogger(f"./logs/full-evaluate.csv", append=True),
         ]
         ds = self._test_ds
         if final:

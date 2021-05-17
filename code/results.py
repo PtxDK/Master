@@ -52,7 +52,6 @@ idxs = [["hyper", "pad", "shrink", "base"], list(range(3))]
 idxs = pd.MultiIndex.from_product(idxs, names=["model", "i"])
 files = glob.glob("./logs/*-final-evaluate.csv")
 files = [i.replace("-final", "") for i in files]
-dfs = []
 data = pd.concat(
     [
         pd.read_csv(i).set_axis(
@@ -64,3 +63,21 @@ data.index = idxs
 print(
     data.groupby(["model"]).agg(['mean', 'std']).to_latex(float_format="%.3f")
 )
+
+#%%
+mpu = pd.read_csv("./logs/mpu.csv").set_index(["model", "mode"])
+mpu.agg(["mean", "std"])
+
+#%%
+files = glob.glob("./logs/UNet3D_augmentation-*-final-evaluate.csv")
+data1 = pd.concat(
+    [
+        pd.read_csv(i).set_axis(
+            [i.split("./logs\\")[-1].split("-final-evaluate.csv")[0]]
+        ) for i in files
+    ]
+).drop(columns=["epoch"])
+idxs = [["aug"], list(range(3))]
+idxs = pd.MultiIndex.from_product(idxs, names=["model", "i"])
+data1.index = idxs
+print(data1.groupby(["model"]).agg(['mean', 'std']))
