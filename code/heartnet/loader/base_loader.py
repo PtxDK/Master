@@ -2,7 +2,6 @@ from os import PathLike
 from typing import Any, Callable, Dict
 
 import numpy as np
-from heartnet.config.base import YamlConfig
 import tensorflow as tf
 import pathlib
 import nibabel as nib

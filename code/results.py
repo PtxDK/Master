@@ -7,7 +7,6 @@ def load_glob(val):
     files = glob.glob(val)
     dfs = []
     for i in files:
-        # {dim}-{prob}-{alpha}-{i}
         splits = i.split("-")
         vals = {
             "dim": splits[1],
@@ -27,10 +26,7 @@ mi: pd.DataFrame = load_glob("./logs/UNet3D_aug-*-[012]-evaluate.csv"
                             ).set_index(["dim", "prob", "alpha", "i"])
 #%%
 print(mi.groupby(["dim", "prob", "alpha"]).agg('std').idxmin())
-print(
-    mi.groupby(["dim", "prob",
-                "alpha"]).agg(['mean', 'std']).to_latex(float_format="%.3f")
-)
+print(mi.groupby(["dim", "prob", "alpha"]).agg(['mean']).idxmin())
 
 #%%
 for i in ["dim", "prob", "alpha"]:

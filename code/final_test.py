@@ -13,8 +13,18 @@ for i in range(3):
     # base3D.batch_size = 1
     # base3D.setup(True)
     # base3D.evaluate()
+    # base3D = BaseModelTraining(
+    #     UNet3D(2, dim=96, out_activation="softmax"),
+    #     name=f"aug-96-0.333-100-{i}",
+    #     full=True
+    # )
+    # base3D.batch_size = 1
+    # base3D.setup(True)
+    # base3D.evaluate()
     base3D = BaseModelTraining(
-        UNet3D(2, dim=96, out_activation="softmax"), name=f"aug-96-0.333-100-{i}", full=True
+        UNet3D(2, dim=112, out_activation="softmax"),
+        name=f"augmentation-shake-0.3332",
+        full=True
     )
     base3D.batch_size = 1
     base3D.setup(True)

@@ -86,15 +86,17 @@ class BaseModelTraining(object):
             callbacks=self.callbacks,
         )
 
-    def evaluate(self):
+    def evaluate(self, final=False):
         cbs = [
             CSVEvaluateLogger(
-                f"./logs/{self._file_name}-{'final' if self.final else ''}-evaluate.csv"
+                f"./logs/{self._file_name}{'-final' if self.final or final else ''}-evaluate.csv"
             ),
             CSVEvaluateLogger(f"./logs/full-evaluate.csv", append=True)
         ]
-        if self._test_ds:
-            self.model.evaluate(self._test_ds, callbacks=cbs)
+        ds = self._test_ds
+        if final:
+            ds = self._final_ds
+        self.model.evaluate(ds, callbacks=cbs)
 
     def load_weights(self):
         self.model.load_weights(f"./model/{self._file_name}.h5")
