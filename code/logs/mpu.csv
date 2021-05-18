@@ -1,7 +1,4 @@
-model,dice,mode
-0,0.873,test
-1,0.879,test
-2,0.869,test
-0,0.89,train
-1,,train
-2,,train
+model,dice,fg_f1,fg_recall,fg_precision
+0,0.873,0.873,0.967,0.815
+1,0.879,0.879,0.92,0.868
+2,0.869,0.869,0.952,0.814

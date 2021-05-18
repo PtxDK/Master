@@ -1,10 +1,13 @@
 from typing import List
+from mpunet.models.unet import UNet
 
 from numpy.lib.function_base import append
+from tensorflow.keras.metrics import Precision, Recall
 from heartnet.callbacks.base import CSVEvaluateLogger, DicePerPerson
 from heartnet.loader.base_loader import *
 from ..metrics.classes import *
 from tensorflow.keras import *
+import nibabel as nib
 
 
 class BaseModelTraining(object):
@@ -48,7 +51,7 @@ class BaseModelTraining(object):
             callbacks.EarlyStopping(
                 monitor='val_dice',
                 min_delta=0,
-                patience=25,
+                patience=11,
                 verbose=1,
                 mode='max'
             ),
@@ -98,6 +101,37 @@ class BaseModelTraining(object):
         if final:
             ds = self._final_ds
         self.model.evaluate(ds, callbacks=cbs)
+
+    def save_output(self):
+        if isinstance(self.model, UNet):
+            res = self.model.predict(self._final_ds.unbatch().batch(111))
+            res = tf.argmax(res, axis=-1)
+            res = tf.reshape(res, [-1, 111, 128, 128])
+            print(res.shape)
+            for idx, out in enumerate(res, start=44):
+                out = tf.transpose(out, [1, 2, 0])
+                img = nib.Nifti1Image(out.numpy(), np.eye(4))
+                nib.save(
+                    img,
+                    f"/homes/pmcd/Peter_Patrick3/out/{self._file_name}-anon{idx}.nii"
+                )
+            return
+        res = self.model.predict(self._final_ds)
+        res = tf.squeeze(res)
+        res = tf.argmax(res, axis=-1)
+        if res.shape[3] > 111:
+            res = res[..., :-1]
+        diff = 128 - res.shape[1]
+        res = tf.pad(
+            res,
+            [[0, 0], [diff // 2, diff // 2], [diff // 2, diff // 2], [0, 0]]
+        )
+        for idx, i in enumerate(res, start=44):
+            img = nib.Nifti1Image(i.numpy(), np.eye(4))
+            nib.save(
+                img,
+                f"/homes/pmcd/Peter_Patrick3/out/{self._file_name}-anon{idx}.nii"
+            )
 
     def load_weights(self):
         self.model.load_weights(f"./model/{self._file_name}.h5")

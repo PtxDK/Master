@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tensorflow.keras.metrics import *
 from tensorflow.python.keras.metrics import MeanMetricWrapper
-from mpunet.evaluate.metrics import one_class_dice, sparse_fg_recall, sparse_fg_precision
+from mpunet.evaluate.metrics import one_class_dice, sparse_fg_recall, sparse_fg_precision, sparse_mean_fg_precision, sparse_mean_fg_recall
 
 
 class Dice(MeanMetricWrapper):
@@ -15,49 +15,103 @@ class Dice(MeanMetricWrapper):
         super().__init__(fn, name=name, dtype=dtype, **kwargs)
 
 
-class FGRecall(MeanMetricWrapper):
+class FGRecall(Metric):
 
     def __init__(self, name="fg_recall", dtype=None, **kwargs):
+        super().__init__(name=name, dtype=dtype, **kwargs)
+        self.sum = self.add_weight("sum", initializer="zero")
+        self.count = self.add_weight("count", initializer="zero")
 
-        def fn(true, pred):
-            return sparse_fg_recall(true, pred, 0)
+    def update_state(self, true, pred, **kwargs):
+        pred = tf.argmax(pred, axis=-1)
 
-        super().__init__(fn, name=name, dtype=dtype, **kwargs)
-
-
-class FGPrecision(MeanMetricWrapper):
-
-    def __init__(self, name="fg_precision", dtype=None, **kwargs):
-
-        def fn(true, pred):
-            return sparse_fg_precision(true, pred, 0)
-
-        super().__init__(fn, name=name, dtype=dtype, **kwargs)
-
-
-class FGF1Score(MeanMetricWrapper):
-
-    def __init__(self, name="fg_f1", dtype=None, **kwargs):
-
-        def fn(y_true, y_pred):
-            y_pred = tf.argmax(y_pred, axis=-1)
-
-            # Get confusion matrix
-            cm = tf.math.confusion_matrix(
-                tf.reshape(y_true, [-1]), tf.reshape(y_pred, [-1])
-            )
+        # Get confusion matrix
+        cm = tf.math.confusion_matrix(
+            tf.reshape(true, [-1]), tf.reshape(pred, [-1])
+        )
+        if tf.size(cm) > 1:
+            cm = tf.cast(cm, tf.float32)
             # Get precisions
             TP = tf.linalg.diag_part(cm)
-            precisions = TP / tf.reduce_sum(cm, axis=0)
+            recalls = tf.math.divide_no_nan(TP, tf.math.reduce_sum(cm, axis=1))
+
+            self.sum.assign_add(tf.math.reduce_mean(recalls[1:]))
+            self.count.assign_add(1)
+
+    def result(self):
+        return self.sum / self.count
+
+    def reset_states(self):
+        self.sum.assign(0)
+        self.count.assign(0)
+
+
+class FGPrecision(Metric):
+
+    def __init__(self, name="fg_precision", dtype=None, **kwargs):
+        super().__init__(name=name, dtype=dtype, **kwargs)
+        self.sum = self.add_weight("sum", initializer="zero")
+        self.count = self.add_weight("count", initializer="zero")
+
+    def update_state(self, true, pred, **kwargs):
+        pred = tf.argmax(pred, axis=-1)
+
+        # Get confusion matrix
+        cm = tf.math.confusion_matrix(
+            tf.reshape(true, [-1]), tf.reshape(pred, [-1])
+        )
+        if tf.size(cm) > 1:
+            cm = tf.cast(cm, tf.float32)
+            # Get precisions
+            TP = tf.linalg.diag_part(cm)
+            precs = tf.math.divide_no_nan(TP, tf.math.reduce_sum(cm, axis=0))
+
+            self.sum.assign_add(tf.math.reduce_mean(precs[1:]))
+            self.count.assign_add(1)
+
+    def result(self):
+        return self.sum / self.count
+
+    def reset_states(self):
+        self.sum.assign(0)
+        self.count.assign(0)
+
+
+class FGF1Score(Metric):
+
+    def __init__(self, name="fg_f1", dtype=None, **kwargs):
+        super().__init__(name=name, dtype=dtype, **kwargs)
+        self.sum = self.add_weight("sum", initializer="zero")
+        self.count = self.add_weight("count", initializer="zero")
+
+    def update_state(self, true, pred, **kwargs):
+        y_pred = tf.argmax(pred, axis=-1)
+
+        # Get confusion matrix
+        cm = tf.math.confusion_matrix(
+            tf.reshape(true, [-1]), tf.reshape(y_pred, [-1])
+        )
+        if tf.size(cm) > 1:
+            cm = tf.cast(cm, tf.float32)
+            # Get precisions
+            TP = tf.linalg.diag_part(cm)
+            precisions = tf.math.divide_no_nan(
+                TP, tf.math.reduce_sum(cm, axis=0)
+            )
             # Get recalls
             TP = tf.linalg.diag_part(cm)
-            recalls = TP / tf.reduce_sum(cm, axis=1)
+            recalls = tf.math.divide_no_nan(TP, tf.math.reduce_sum(cm, axis=1))
 
             # Get F1s
-            f1s = (2*precisions*recalls) / (precisions+recalls)
+            f1s = tf.math.divide_no_nan(
+                (2 * precisions * recalls), (precisions + recalls)
+            )
+            self.sum.assign_add(tf.math.reduce_mean(f1s[1:]))
+            self.count.assign_add(1)
 
-            return tf.math.reduce_mean(f1s[1:])
+    def result(self):
+        return self.sum / self.count
 
-        super().__init__(fn, name=name, dtype=dtype, **kwargs)
-        
-        
+    def reset_states(self):
+        self.sum.assign(0)
+        self.count.assign(0)

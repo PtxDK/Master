@@ -26,7 +26,7 @@ for k, (a, s) in enumerate(augs):
     base.augmentations = [Elastic2D(alpha=a, sigma=s, apply_prob=1.0),]
     base.setup()
 
-    ds = base._train_ds.unbatch().batch(111)
+    ds = base._final_ds.unbatch().batch(111)
     for idx, (x, y) in enumerate(ds.map(squeeze)):
         os.makedirs(f"anon{idx}/aug{k+1}",exist_ok=True)
         for j in range(111):
@@ -38,21 +38,21 @@ for k, (a, s) in enumerate(augs):
             )
             plt.savefig(f"anon{idx}/aug{k+1}/{j}.jpg")
             plt.clf()
-# base = BaseModelTraining(
-#     UNet(2, depth=4, dim=128, out_activation="softmax", complexity_factor=2),
-#     f"base"
-# )
-# base.setup()
+base = BaseModelTraining(
+    UNet(2, depth=4, dim=128, out_activation="softmax", complexity_factor=2),
+    f"base"
+)
+base.setup()
 
-# ds = base._train_ds.unbatch().batch(111)
-# for idx, (x, y) in enumerate(ds.map(squeeze)):
-#     os.makedirs(f"anon{idx}/base",exist_ok=True)
-#     for j in range(111):
-#         plt.imshow(x[j], cmap="gray")
-#         plt.imshow(
-#             np.ma.masked_where(y[j] == 0, y[j]),
-#             cmap=plt.cm.get_cmap("gray").set_under(alpha=0.0),
-#             alpha=0.5
-#         )
-#         plt.savefig(f"anon{idx}/base/{j}.jpg")
-#         plt.clf()
+ds = base._final_ds.unbatch().batch(111)
+for idx, (x, y) in enumerate(ds.map(squeeze)):
+    os.makedirs(f"anon{idx}/base",exist_ok=True)
+    for j in range(111):
+        plt.imshow(x[j], cmap="gray")
+        plt.imshow(
+            np.ma.masked_where(y[j] == 0, y[j]),
+            cmap=plt.cm.get_cmap("gray").set_under(alpha=0.0),
+            alpha=0.5
+        )
+        plt.savefig(f"anon{idx}/base/{j}.jpg")
+        plt.clf()
