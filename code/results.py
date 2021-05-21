@@ -46,10 +46,15 @@ data = pd.concat(
 data.index = idxs
 print(data.groupby(["model"]).agg(['mean']))
 #%%
-idxs = [["hyper", "pad", "shrink", "base"], list(range(3))]
+idxs = [
+    ["hyper", "augmentation", "pad", "hyper2", "shrink", "base"],
+    list(range(3))
+]
 idxs = pd.MultiIndex.from_product(idxs, names=["model", "i"])
 files = glob.glob("./logs/*-final-evaluate.csv")
-files = [i.replace("-final", "") for i in files]
+files.sort()
+# files = [i.replace("-final", "") for i in files]
+print(files)
 data = pd.concat(
     [
         pd.read_csv(i).set_axis(
@@ -64,10 +69,13 @@ print(
 
 #%%
 mpu = pd.read_csv("./logs/mpu.csv").set_index(["model"])
-idxs = [
-    ("MPUNet", 0), ("MPUNet", 1),
-    ("MPUNet", 2),
-]
+idxs = [("MPUNet", 0), ("MPUNet", 1), ("MPUNet", 2),]
+idxs = pd.MultiIndex.from_tuples(idxs, names=["model", "i"])
+mpu.index = idxs
+print(mpu.groupby(["model"]).agg(["mean", "std"]).to_latex(float_format="%.3f"))
+#%%
+mpu = pd.read_csv("./logs/mpu-noaug.csv").set_index(["model"])
+idxs = [("MPUNet", 0), ("MPUNet", 1), ("MPUNet", 2),]
 idxs = pd.MultiIndex.from_tuples(idxs, names=["model", "i"])
 mpu.index = idxs
 print(mpu.groupby(["model"]).agg(["mean", "std"]).to_latex(float_format="%.3f"))
@@ -137,10 +145,7 @@ data1 = pd.concat(
         ) for i in files
     ]
 ).drop(columns=["epoch"]).sort_index()
-idxs = [
-    ("2D U-Net", 0), ("2D U-Net", 1),
-    ("2D U-Net", 2),
-]
+idxs = [("2D U-Net", 0), ("2D U-Net", 1), ("2D U-Net", 2),]
 idxs = pd.MultiIndex.from_tuples(idxs, names=["model", "i"])
 data1.index = idxs
 print(
@@ -155,10 +160,7 @@ data1 = pd.concat(
         ) for i in files
     ]
 ).drop(columns=["epoch"]).sort_index()
-idxs = [
-    ("2D U-Net", 0), ("2D U-Net", 1),
-    ("2D U-Net", 2),
-]
+idxs = [("2D U-Net", 0), ("2D U-Net", 1), ("2D U-Net", 2),]
 idxs = pd.MultiIndex.from_tuples(idxs, names=["model", "i"])
 data1.index = idxs
 print(

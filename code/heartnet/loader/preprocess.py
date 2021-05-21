@@ -30,3 +30,8 @@ def split_slices(x, y):
 
 def expand_dims(x, y):
     return (tf.expand_dims(x, -1), tf.expand_dims(y, -1))
+
+def normalize(x,y):
+    x = x - tf.math.reduce_mean(x)
+    x = x / tf.math.reduce_std(x)
+    return x, y
