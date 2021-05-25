@@ -9,9 +9,9 @@ def load_glob(val):
     for i in files:
         splits = i.split("-")
         vals = {
-            "dim": splits[1],
-            "prob": splits[2],
-            "alpha": splits[3],
+            "Dimension": splits[1],
+            "Probability": splits[2],
+            "Alpha": splits[3],
             "i": splits[4]
         }
 
@@ -20,11 +20,21 @@ def load_glob(val):
 
 
 mi: pd.DataFrame = load_glob("./logs/UNet3D_aug-*-[012]-evaluate.csv"
-                            ).set_index(["dim", "prob", "alpha", "i"])
+                            ).set_index(
+                                ["Dimension", "Probability", "Alpha", "i"]
+                            )
+mi = mi.rename(
+    columns=lambda x: x.capitalize() if "fg_" not in x else x[3:].capitalize(),
+)
 #%%
-mi.groupby(['dim', 'prob', 'alpha']).agg(['mean', 'std'])
+print(
+    mi.groupby(['Dimension', 'Probability',
+                'Alpha']).agg(['mean', 'std']).to_latex(float_format="%.3f")
+)
 #%%
-for i in ["dim", "prob", "alpha"]:
+print(mi.sort_index().to_latex(float_format="%.3f"))
+#%%
+for i in ["Dimension", "Probability", "Alpha"]:
     print(mi.groupby([i]).agg(['mean']))
 # %%
 idxs = [
@@ -35,22 +45,58 @@ idxs = [
     ],
     list(range(3))
 ]
-idxs = pd.MultiIndex.from_product(idxs, names=["model", "i"])
+idxs = pd.MultiIndex.from_product(idxs, names=["Model", "i"])
 files = glob.glob("./logs/*-final-evaluate.csv")
 files.sort()
-files = [i for i in files if "pad-normal" not in i]
-data = pd.concat(
-    [
-        pd.read_csv(i) for i in files
-    ]
-).drop(columns=["epoch", "fg_f1", "model"])
+files = [i for i in files if "pad-normal" not in i and "scaled" not in i]
+eval_res = pd.concat([pd.read_csv(i) for i in files]
+                    ).drop(columns=["epoch", "fg_f1", "model"])
 
-data.index = idxs
-print(data.groupby(["model"]).agg(['mean', 'std']).to_latex(float_format="%.3f"))
-print(data.to_latex(float_format="%.3f"))
+eval_res.index = idxs
+eval_res = eval_res.rename(
+    columns=lambda x: x.capitalize() if "fg_" not in x else x[3:].capitalize(),
+)
+print(
+    eval_res.groupby(["Model"]).agg(['mean',
+                                     'std']).to_latex(float_format="%.3f")
+)
+#%%
+print(eval_res.to_latex(float_format="%.3f"))
+
+#%%
+# files = glob.glob("./logs/*-final-evaluate.csv")
+# files.sort()
+files = [
+    i.replace("-final", "")
+    for i in files
+    if "pad-normal" not in i and "noaug" not in i
+]
+data1 = pd.concat([pd.read_csv(i) for i in files]
+                 ).drop(columns=["epoch", "fg_f1", "model"]).sort_index()
+
+idxs = [
+    [
+        "3D U-Net H.P. tuning set 1", "3D U-Net, D.A.",
+        "3D U-Net H.P. tuning set 2", "3D U-Net, padding",
+        "3D U-Net, shrinking", "2D U-Net", "MPUNet"
+    ],
+    list(range(3))
+]
+idxs = pd.MultiIndex.from_product(idxs, names=["Model", "i"])
+data1.index = idxs
+data1 = data1.rename(
+    columns=lambda x: x.capitalize() if "fg_" not in x else x[3:].capitalize(),
+)
+print(
+    data1[["Dice", "Precision",
+           "Recall"]].groupby("Model").agg(['mean', 'std']
+                                          ).to_latex(float_format="%.3f")
+)
+#%%
+print(data1.to_latex(float_format="%.3f"))
 #%%
 files = glob.glob("./logs/UNet3D_hyper-*[012]-evaluate.csv")
-data1 = pd.concat(
+test_res = pd.concat(
     [
         pd.read_csv(i).set_axis(
             [i.split("./logs\\")[-1].split("-final-evaluate.csv")[0]]
@@ -61,39 +107,14 @@ idxs = [
     (1, 3, 0), (1, 3, 1), (1, 3, 2), (1, 4, 0), (1, 4, 1), (1, 4, 2), (1, 5, 0),
     (1, 5, 1), (1, 5, 2), (2, 3, 0), (2, 3, 1), (2, 3, 2)
 ]
-idxs = pd.MultiIndex.from_tuples(idxs, names=["cf", "depth", "i"])
-data1.index = idxs
-print(data1.to_latex(float_format="%.3f"))
-#%%
-files = glob.glob("./logs/UNet3D_augmentation-[012]-evaluate.csv")
-data1 = pd.concat(
-    [
-        pd.read_csv(i).set_axis(
-            [i.replace("./logs/", "").replace("-evaluate.csv", "")]
-        ) for i in files
-    ]
-).drop(columns=["epoch", "fg_f1"]).sort_index()
-idxs = [
-    ("UNet3D_augmentation", 0), ("UNet3D_augmentation", 1),
-    ("UNet3D_augmentation", 2),
-]
-idxs = pd.MultiIndex.from_tuples(idxs, names=["model", "i"])
-data1.index = idxs
-print(data1.groupby(["model"]).agg('mean'))
-#%%
-files = glob.glob("./logs/*[012]-evaluate.csv")
-data1 = pd.concat(
-    [
-        pd.read_csv(i).set_axis(
-            [i.replace("./logs/", "").replace("-evaluate.csv", "")]
-        ) for i in files
-    ]
-).drop(columns=["epoch", "fg_f1"]).sort_index()
-print(data1)
-# idxs = [("2D U-Net", 0), ("2D U-Net", 1), ("2D U-Net", 2),]
-# idxs = pd.MultiIndex.from_tuples(idxs, names=["model", "i"])
-# data1.index = idxs
-# print(data1.groupby(["model"]).agg('mean'))
+idxs = pd.MultiIndex.from_tuples(
+    idxs, names=["Complexity Factor", "Depth", "i"]
+)
+test_res.index = idxs
+test_res = test_res.rename(
+    columns=lambda x: x.capitalize() if "fg_" not in x else x[3:].capitalize(),
+)
+print(test_res.to_latex(float_format="%.3f"))
 #%%
 genders = [
     "M", "M", "F", "M", "M", "M", "M", "M", "M", "M", "M", "M", "M", "F", "F",
@@ -102,7 +123,7 @@ genders = [
     "F", "M", "F", "M", "M", "M", "M", "M", "F", "M", "F", "M", "F", "F", "M",
     "M"
 ]
-splits = [("train", 26), ("val", 9), ("test", 9), ("true_test", 17)]
+splits = [("train", 26), ("val", 9), ("test", 9), ("evaluation", 17)]
 start = 0
 curr = 0
 dict_val = {}
@@ -116,6 +137,7 @@ dict_val["total"] = [
     len([i for i in genders if i == "F"])
 ]
 data = pd.DataFrame(dict_val).set_axis(["M", "F"]).T
-res = data.div(data.sum(axis=1), axis=0)
-print(res)
+data[['M%', 'F%']] = data.div(data.sum(axis=1), axis=0)
+data = data.sort_index(axis=1)
+print(data.to_latex(float_format="%.3f"))
 # %%

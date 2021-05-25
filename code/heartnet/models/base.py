@@ -21,11 +21,11 @@ class BaseModelTraining(object):
         self.num_slices = 111
         self.image_size = self.model.img_shape
         self.dim = self.image_size[0]
-        self.data_base_folder = "/homes/pmcd/Peter_Patrick3"
-        self.data_train_folder = "train"
-        self.data_val_folder = "val"
-        self.data_test_folder = "test"
-        self.data_final_test_folder = "true_test"
+        # self.data_base_folder = "/homes/pmcd/Peter_Patrick3"
+        self.data_train_folder = "/homes/pmcd/Peter_Patrick3/train"
+        self.data_val_folder = "/homes/pmcd/Peter_Patrick3/val"
+        self.data_test_folder = "/homes/pmcd/Peter_Patrick3/test"
+        self.data_final_test_folder = "/homes/pmcd/Peter_Patrick3/true_test"
         self.batch_size = 1
         self.metrics = [Dice(), FGF1Score(), FGRecall(), FGPrecision()]
         self.loss = loss or losses.SparseCategoricalCrossentropy()
@@ -143,22 +143,25 @@ class BaseModelTraining(object):
             self.data_final_test_folder
         ]
         ret = {i: None for i in splits}
-        base_folder = pathlib.Path(self.data_base_folder)
+        # base_folder = pathlib.Path(self.data_base_folder)
         for split in splits:
-            ds = load_function(
-                base_folder / split,
-                output_dim=self.model.img_shape[0],
-                augmentations=self.augmentations if split == "train" else []
-            )
+            if split.endswith(".tfrecord"):
+                ds = test_load(split)
+            else:
+                ds = load_function(
+                    split,
+                    output_dim=self.model.img_shape[0],
+                    augmentations=self.augmentations if split == "train" else []
+                )
             if split == "train":
                 rep_ds, aug_ds = None, None
                 if self.concat_augs:
                     ds = load_function(
-                        base_folder / split,
+                        split,
                         output_dim=self.model.img_shape[0],
                     )
                     aug_ds = load_function(
-                        base_folder / split,
+                        split,
                         output_dim=self.model.img_shape[0],
                         augmentations=self.augmentations
                     )

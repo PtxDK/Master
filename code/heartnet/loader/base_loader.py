@@ -49,10 +49,24 @@ def load2D(base_dir, **kwargs):
     dataset = base_loader(base_dir, **kwargs)
     dataset = dataset.map(transpose_slices, -1)
     dataset = dataset.map(expand_dims, -1)
-    return dataset.flat_map(split_slices).map(normalize)
+    return dataset.flat_map(split_slices)
 
 
 load_functions: Dict[str, Callable[[Any], tf.data.Dataset]] = {
     "UNet": load2D,
     "UNet3D": load3D
 }
+
+
+def deserialize(ex):
+    features = {
+        "x": tf.io.FixedLenFeature([128, 128, 1], tf.float32),
+        "y": tf.io.FixedLenFeature([128, 128, 1], tf.int64),
+    }
+    return tf.io.parse_single_example(ex, features)
+
+
+def test_load(base_dir, **kwargs):
+    return tf.data.TFRecordDataset(
+        base_dir, num_parallel_reads=-1
+    ).map(deserialize).map(lambda x: (x["x"], x["y"]))
