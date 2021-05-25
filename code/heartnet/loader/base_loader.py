@@ -49,7 +49,7 @@ def load2D(base_dir, **kwargs):
     dataset = base_loader(base_dir, **kwargs)
     dataset = dataset.map(transpose_slices, -1)
     dataset = dataset.map(expand_dims, -1)
-    return dataset.flat_map(split_slices)
+    return dataset.flat_map(split_slices).map(normalize)
 
 
 load_functions: Dict[str, Callable[[Any], tf.data.Dataset]] = {

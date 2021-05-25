@@ -22,10 +22,7 @@ def load_glob(val):
 mi: pd.DataFrame = load_glob("./logs/UNet3D_aug-*-[012]-evaluate.csv"
                             ).set_index(["dim", "prob", "alpha", "i"])
 #%%
-print(mi.sort_index().to_latex(float_format="%.3f"))
-# print(mi.groupby(["dim", "prob", "alpha"]).agg('std').idxmin())
-# print(mi.groupby(["dim", "prob", "alpha"]).agg(['mean']).idxmin())
-
+mi.groupby(['dim', 'prob', 'alpha']).agg(['mean', 'std'])
 #%%
 for i in ["dim", "prob", "alpha"]:
     print(mi.groupby([i]).agg(['mean']))
@@ -49,7 +46,7 @@ data = pd.concat(
 ).drop(columns=["epoch", "fg_f1", "model"])
 
 data.index = idxs
-print(data.groupby(["model"]).agg('mean').to_latex(float_format="%.3f"))
+print(data.groupby(["model"]).agg(['mean', 'std']).to_latex(float_format="%.3f"))
 print(data.to_latex(float_format="%.3f"))
 #%%
 files = glob.glob("./logs/UNet3D_hyper-*[012]-evaluate.csv")
@@ -84,7 +81,7 @@ idxs = pd.MultiIndex.from_tuples(idxs, names=["model", "i"])
 data1.index = idxs
 print(data1.groupby(["model"]).agg('mean'))
 #%%
-files = glob.glob("./logs/UNet_base[012]-evaluate.csv")
+files = glob.glob("./logs/*[012]-evaluate.csv")
 data1 = pd.concat(
     [
         pd.read_csv(i).set_axis(
@@ -92,10 +89,11 @@ data1 = pd.concat(
         ) for i in files
     ]
 ).drop(columns=["epoch", "fg_f1"]).sort_index()
-idxs = [("2D U-Net", 0), ("2D U-Net", 1), ("2D U-Net", 2),]
-idxs = pd.MultiIndex.from_tuples(idxs, names=["model", "i"])
-data1.index = idxs
-print(data1.groupby(["model"]).agg('mean'))
+print(data1)
+# idxs = [("2D U-Net", 0), ("2D U-Net", 1), ("2D U-Net", 2),]
+# idxs = pd.MultiIndex.from_tuples(idxs, names=["model", "i"])
+# data1.index = idxs
+# print(data1.groupby(["model"]).agg('mean'))
 #%%
 genders = [
     "M", "M", "F", "M", "M", "M", "M", "M", "M", "M", "M", "M", "M", "F", "F",
