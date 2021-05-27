@@ -102,13 +102,24 @@ class BaseModelTraining(object):
             ds = self._final_ds
         self.model.evaluate(ds, callbacks=cbs)
 
-    def save_output(self):
+    def save_output(self, ds):
+        if ds == "train":
+            ds = self._train_ds
+            start = 0
+        elif ds == "val":
+            ds = self._val_ds
+            start = 26
+        elif ds == "test":
+            ds = self._test_ds
+            start = 35
+        elif ds == "final":
+            ds = self._final_ds
+            start = 44
         if isinstance(self.model, UNet):
-            res = self.model.predict(self._final_ds.unbatch().batch(111))
+            res = self.model.predict(ds.unbatch().batch(111))
             res = tf.argmax(res, axis=-1)
             res = tf.reshape(res, [-1, 111, 128, 128])
-            print(res.shape)
-            for idx, out in enumerate(res, start=44):
+            for idx, out in enumerate(res, start=start):
                 out = tf.transpose(out, [1, 2, 0])
                 img = nib.Nifti1Image(out.numpy(), np.eye(4))
                 nib.save(
@@ -116,7 +127,7 @@ class BaseModelTraining(object):
                     f"/homes/pmcd/Peter_Patrick3/out/{self._file_name}-anon{idx}.nii"
                 )
             return
-        res = self.model.predict(self._final_ds)
+        res = self.model.predict(ds)
         res = tf.squeeze(res)
         res = tf.argmax(res, axis=-1)
         if res.shape[3] > 111:
@@ -126,7 +137,7 @@ class BaseModelTraining(object):
             res,
             [[0, 0], [diff // 2, diff // 2], [diff // 2, diff // 2], [0, 0]]
         )
-        for idx, i in enumerate(res, start=44):
+        for idx, i in enumerate(res, start=start):
             img = nib.Nifti1Image(i.numpy(), np.eye(4))
             nib.save(
                 img,
@@ -143,7 +154,6 @@ class BaseModelTraining(object):
             self.data_final_test_folder
         ]
         ret = {i: None for i in splits}
-        # base_folder = pathlib.Path(self.data_base_folder)
         for split in splits:
             if split.endswith(".tfrecord"):
                 ds = test_load(split)
@@ -157,8 +167,7 @@ class BaseModelTraining(object):
                 rep_ds, aug_ds = None, None
                 if self.concat_augs:
                     ds = load_function(
-                        split,
-                        output_dim=self.model.img_shape[0],
+                        split, output_dim=self.model.img_shape[0],
                     )
                     aug_ds = load_function(
                         split,

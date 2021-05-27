@@ -116,6 +116,7 @@ test_res = test_res.rename(
 )
 print(test_res.to_latex(float_format="%.3f"))
 #%%
+from collections import Counter
 genders = [
     "M", "M", "F", "M", "M", "M", "M", "M", "M", "M", "M", "M", "M", "F", "F",
     "F", "M", "F", "M", "M", "F", "F", "F", "M", "M", "M", "M", "M", "F", "F",
@@ -123,21 +124,17 @@ genders = [
     "F", "M", "F", "M", "M", "M", "M", "M", "F", "M", "F", "M", "F", "F", "M",
     "M"
 ]
-splits = [("train", 26), ("val", 9), ("test", 9), ("evaluation", 17)]
-start = 0
+splits = [("Train", 26), ("Validation", 9), ("Test", 9), ("Evaluation", 17)]
 curr = 0
 dict_val = {}
-for (name, idx) in splits:
-    curr = idx
-    men = len([i for i in genders[start:curr] if i == "M"])
-    women = len([i for i in genders[start:curr] if i == "F"])
-    dict_val[name] = [men, women]
-dict_val["total"] = [
-    len([i for i in genders if i == "M"]),
-    len([i for i in genders if i == "F"])
-]
-data = pd.DataFrame(dict_val).set_axis(["M", "F"]).T
-data[['M%', 'F%']] = data.div(data.sum(axis=1), axis=0)
+for (name, add_val) in splits:
+    counts = Counter(genders[curr:curr + add_val])
+    curr += add_val
+    dict_val[name] = counts
+counts = Counter(genders)
+dict_val["total"] = counts
+data = pd.DataFrame(dict_val).set_axis(["M", 'F']).T
+data[["M%", "F%"]] = (data.iloc[:, :] / data.sum(axis=1)[:, None])
 data = data.sort_index(axis=1)
 print(data.to_latex(float_format="%.3f"))
 # %%
