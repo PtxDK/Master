@@ -28,13 +28,6 @@ for i in range(3):
     # base3D.batch_size = 1
     # base3D.setup(True)
     # base3D.evaluate()
-    base = BaseModelTraining(
-        UNet(2, depth=4, dim=128, out_activation="softmax", complexity_factor=2),
-        f"base{i}"
-    )
-    base.batch_size = 64
-    base.setup(True)
-    base.evaluate(True)
     # base3D = BaseModelTraining(
     #     UNet3D(2, dim=96, out_activation="softmax", depth=4),
     #     name=f"hyper-20-30-1-4-{i}"
@@ -42,3 +35,10 @@ for i in range(3):
     # base3D.batch_size = 1
     # base3D.setup(True)
     # base3D.evaluate()
+    base = BaseModelTraining(
+        UNet(2, depth=4, dim=128, out_activation="softmax", complexity_factor=2),
+        f"base{i}"
+    )
+    base.batch_size = 64
+    base.setup(True)
+    base.evaluate()

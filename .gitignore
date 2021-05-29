@@ -5,3 +5,17 @@
 *settings.json
 .vscode/settings.json
 **.tfrecord
+code/tables/eval-results-full.tex
+code/tables/eval-results-mean.tex
+code/tables/hyper-1-full.tex
+code/tables/hyper-1-mean.tex
+code/tables/hyper-2-full.tex
+code/tables/hyper-2-mean.tex
+code/tables/men-women-split.tex
+code/tables/scaled-results-full.tex
+code/tables/scaled-results-mean.tex
+code/tables/test-results-da.tex
+code/tables/test-results-first.tex
+code/tables/test-results-full.tex
+code/tables/test-results-mean.tex
+code/notes.md

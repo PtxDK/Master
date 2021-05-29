@@ -4,7 +4,7 @@ from heartnet.models.base import BaseModelTraining
 from heartnet.augmentation.elastic import Elastic3D
 for i in range(1):
     base3D = BaseModelTraining(
-        UNet3D(2, dim=96, out_activation="softmax"), name=f"augmentation1-{i}"
+        UNet3D(2, dim=96, out_activation="softmax"), name=f"augmentation-{i}"
     )
     base3D.batch_size = 1
     base3D.augmentations = [
