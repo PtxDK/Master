@@ -58,14 +58,14 @@ mi.groupby(['Dimension', 'Probability', 'Alpha']).aggregate(
     buf="./tables/hyper-1-mean.tex",
     caption=
     "Full results from the first set of hyper parameter tuning over the values of the dimension, alpha upper bound, and application probability",
-    label="fig:hyperparam_results"
+    label="tab:hyper-1-results"
 )
 mi.sort_index().applymap(round_vals).to_latex(
     **latex_kwargs,
     buf="./tables/hyper-1-full.tex",
     caption=
     "Hyper parameter (H.P) search full results from the first set with 3D U-Net using data augmentation",
-    label="fig:appendix-full-hyper-param-set-1"
+    label="tab:hyper-1-results-full"
 )
 #%% Hyper Results 2
 files = glob.glob("./logs/UNet3D_hyper-*[012]-evaluate.csv")
@@ -87,7 +87,7 @@ test_res.applymap(round_vals).to_latex(
     buf="./tables/hyper-2-full.tex",
     caption=
     "Full results from the second set of hyper parameter tuning over the values of the complexity factor and depth, the higher complexity factor and depth values ran in to out-of-memory errors",
-    label="fig:test-data-first-results"
+    label="tab:hyper-2-results-full"
 )
 test_res = test_res.groupby(["Complexity Factor", "Depth"]).agg(['mean', 'std'])
 
@@ -96,7 +96,7 @@ test_res.applymap(round_vals).to_latex(
     buf="./tables/hyper-2-mean.tex",
     caption=
     "Hyper parameter (H.P) search results from the second set with 3D U-Net using data augmentation",
-    label="fig:appendix-full-hyper-param-set-2",
+    label="tab:hyper-2-results",
 )
 #%% Test results
 files = glob.glob("./logs/*-final-evaluate.csv")
@@ -128,7 +128,7 @@ test_res.applymap(round_vals).to_latex(
     buf="./tables/test-results-full.tex",
     caption=
     "Full results from the models when tested on the test set",
-    label="fig:test-results-full"
+    label="tab:test-results-full"
 )
 test_res.loc[[
     "2D U-Net", "3D U-Net, padding", "3D U-Net, shrinking", "MPUNet"
@@ -137,14 +137,14 @@ test_res.loc[[
     buf="./tables/test-results-first.tex",
     caption=
     "Early performance results on models created with train and validation data, predicting on testing data. The best performing model appears to be the \"3D U-Net, shrinking\", whereas the worst performing model appears to be \"2D U-Net\"",
-    label="fig:test-data-first-results"
+    label="tab:test-results-first"
 )
 test_res_mean.to_latex(
     **latex_kwargs,
     buf="./tables/test-results-mean.tex",
     caption=
     "Performance results from various models, running only with validation data and optimizations.",
-    label="fig:optimized_val_data"
+    label="tab:test-results"
 )
 test_res.loc[["3D U-Net, shrinking", "3D U-Net, D.A."]].groupby("Model").agg(
     ['mean', 'std']
@@ -152,8 +152,8 @@ test_res.loc[["3D U-Net, shrinking", "3D U-Net, D.A."]].groupby("Model").agg(
     **latex_kwargs,
     buf="./tables/test-results-da.tex",
     caption=
-    "Early performance results on models with and without Data Augmentation, D.A. stands for data augmentation, while 3D U-Net, shrinking has been previously seen in Figure \\ref{fig:test-data-first-results}",
-    label="fig:data-augmentation-test-results"
+    "Early performance results on models with and without Data Augmentation, D.A. stands for data augmentation, while 3D U-Net, shrinking has been previously seen in Table \\ref{tab:test-data-first-results}",
+    label="tab:test-results-data-augmentation"
 )
 # %%
 idxs = [
@@ -180,14 +180,14 @@ eval_res.groupby(["Model"]).agg(['mean', 'std']).apply(bold_max).to_latex(
     **latex_kwargs,
     buf="./tables/eval-results-mean.tex",
     caption=
-    "Performance results from various models that where optimized on from validation data, results shown in this figure is from testing with the never before seen test dataset, also called evaluation dataset, it has only been run once in this run, and nothing was changed again afterwords",
-    label="fig:test_results"
+    "Performance results from various models that where optimized on from validation data, results shown in this table is from testing with the never before seen test dataset, also called evaluation dataset, it has only been run once in this run, and nothing was changed again afterwords",
+    label="tab:eval-results"
 )
 eval_res.applymap(round_vals).to_latex(
     **latex_kwargs,
     buf="./tables/eval-results-full.tex",
     caption="Full results from the models when tested on the final evaluation set",
-    label="fig:eval-full-results"
+    label="tab:eval-results-full"
 )
 
 #%%
