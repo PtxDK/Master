@@ -19,3 +19,10 @@ code/tables/test-results-first.tex
 code/tables/test-results-full.tex
 code/tables/test-results-mean.tex
 code/notes.md
+code/tables/data-augmentaion-results-mean.tex
+.gitignore
+code/tables/counts-max.png
+code/tables/counts.png
+code/tables/data-augmentaion-results-full.tex
+code/tables/depth-results-full.tex
+code/tables/depth-results-mean.tex
