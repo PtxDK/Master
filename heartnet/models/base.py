@@ -91,11 +91,9 @@ class BaseModelTraining(object):
 
     def evaluate(self, final=False):
         cbs = [
-            # DicePerPerson(),
             CSVEvaluateLogger(
                 f"./logs/{self._file_name}{'-final' if self.final or final else ''}-evaluate.csv"
             ),
-            # CSVEvaluateLogger(f"./logs/full-evaluate.csv", append=True),
         ]
         ds = self._test_ds
         if final:
