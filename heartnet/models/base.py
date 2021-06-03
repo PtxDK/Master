@@ -2,6 +2,7 @@ from typing import List
 from mpunet.models.unet import UNet
 
 from numpy.lib.function_base import append
+from tensorflow import keras
 from tensorflow.keras.metrics import Precision, Recall
 from heartnet.callbacks.base import CSVEvaluateLogger, DicePerPerson
 from heartnet.loader.base_loader import *
@@ -18,10 +19,14 @@ class BaseModelTraining(object):
         super().__init__()
         self.name = name
         self.model: models.Model = model
-        self.num_slices = 111
-        self.image_size = self.model.img_shape
-        self.dim = self.image_size[0]
-        # self.data_base_folder = "/homes/pmcd/Peter_Patrick3"
+        # self.num_slices = 111
+        # self.image_size = self.model.img_shape
+        # self.dim = self.image_size[0]
+        if isinstance(model, keras.Sequential):
+            self.core_model = model.layers[-1]
+            self.model = keras.Model(inputs=model.inputs, outputs=model.outputs)
+        else:
+            self.core_model = model
         self.data_train_folder = "/homes/pmcd/Peter_Patrick3/train"
         self.data_val_folder = "/homes/pmcd/Peter_Patrick3/val"
         self.data_test_folder = "/homes/pmcd/Peter_Patrick3/test"
@@ -53,7 +58,8 @@ class BaseModelTraining(object):
                 min_delta=0,
                 patience=11,
                 verbose=1,
-                mode='max'
+                mode='max',
+                restore_best_weights=True
             ),
             callbacks.ModelCheckpoint(
                 f"./model/{self._file_name}.h5",
@@ -67,7 +73,7 @@ class BaseModelTraining(object):
 
     @property
     def model_name(self):
-        return self.model.__class__.__name__
+        return self.core_model.__class__.__name__
 
     def setup(self, load_weights=False):
         if load_weights:
@@ -96,7 +102,7 @@ class BaseModelTraining(object):
             ),
         ]
         ds = self._test_ds
-        if final:
+        if final or self.final:
             ds = self._final_ds
         self.model.evaluate(ds, callbacks=cbs)
 
@@ -113,7 +119,7 @@ class BaseModelTraining(object):
         elif ds == "final":
             ds = self._final_ds
             start = 44
-        if isinstance(self.model, UNet):
+        if isinstance(self.core_model, UNet):
             res = self.model.predict(ds.unbatch().batch(111))
             res = tf.argmax(res, axis=-1)
             res = tf.reshape(res, [-1, 111, 128, 128])
@@ -158,25 +164,9 @@ class BaseModelTraining(object):
             else:
                 ds = load_function(
                     split,
-                    output_dim=self.model.img_shape[0],
+                    output_dim=self.core_model.img_shape[0],
                     augmentations=self.augmentations if split == "train" else []
                 )
-            if split == "train":
-                rep_ds, aug_ds = None, None
-                if self.concat_augs:
-                    ds = load_function(
-                        split, output_dim=self.model.img_shape[0],
-                    )
-                    aug_ds = load_function(
-                        split,
-                        output_dim=self.model.img_shape[0],
-                        augmentations=self.augmentations
-                    )
-
-                if self.aug_repeats > 1:
-                    ds = ds.repeat(self.aug_repeats)
-                if self.concat_augs and aug_ds:
-                    ds = ds.concatenate(aug_ds)
             if self.batch_size:
                 ds = ds.batch(self.batch_size)
             ret[split] = ds.prefetch(-1)
