@@ -255,17 +255,25 @@ data.to_latex(
     label="tab:men-women-per-split")
 # %%
 files = glob.glob("./logs/*data*-final-evaluate.csv")
+files += glob.glob("./logs/UNet3D_pad-robust-scaled-*-final-evaluate.csv")
 files.sort()
 files = [
     i for i in files
-    if "pad-normal" not in i and "noaug" not in i and "scaled" not in i
+    if "pad-normal" not in i and "noaug" not in i
 ]
 data_res = pd.concat([pd.read_csv(i) for i in files
                       ]).drop(columns=["epoch", "fg_f1"]).sort_index()
-print(data_res)
-# idxs = [["3D U-Net, padding", "2D U-Net"], list(range(3))]
-# idxs = pd.MultiIndex.from_product(idxs, names=["Model", "i"])
-# data_res.index = idxs
-# data_res = data_res.rename(
-#     columns=lambda x: x.capitalize() if "fg_" not in x else x[3:].capitalize(),
-# )
+idxs = [[
+    "3D U-Net, D.A., Data", "3D U-Net, HP 1, Data", "3D U-Net, HP2, Data", "3D U-Net, padding, Data", "3D U-Net, padding, Robust", "3D U-Net, shrinking, Data", "2D U-Net, Robust, Data"
+],
+        list(range(3))]
+idxs = pd.MultiIndex.from_product(idxs, names=["Model", "i"])
+data_res.index = idxs
+data_res = data_res.rename(
+    columns=lambda x: x.capitalize() if "fg_" not in x else x[3:].capitalize(),
+)
+data_res.groupby(['Model']).agg(['mean', 'std']**latex_kwargs,
+    buf="./tables/new-models.tex",
+    caption=
+    "",
+    label="tab:a-a")

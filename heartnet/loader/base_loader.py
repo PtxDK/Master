@@ -7,17 +7,17 @@ import pathlib
 import nibabel as nib
 from .preprocess import *
 
+SPLITS = {"train": 26, "val": 9, "test": 9, "true_test": 0}
+
 
 def base_loader(base_dir: PathLike, **kwargs) -> tf.data.Dataset:
     base_dir = pathlib.Path(base_dir)
     images = (base_dir / "images")
     labels = (base_dir / "labels")
     img_ds = tf.data.Dataset.from_tensor_slices(
-        [str(i) for i in images.glob("*")]
-    )
+        [str(i) for i in images.glob("*")])
     label_ds = tf.data.Dataset.from_tensor_slices(
-        [str(i) for i in labels.glob("*")]
-    )
+        [str(i) for i in labels.glob("*")])
     dataset = tf.data.Dataset.zip((img_ds, label_ds))
 
     def load_img(x, y):
@@ -31,9 +31,8 @@ def base_loader(base_dir: PathLike, **kwargs) -> tf.data.Dataset:
     def get_img(x, y):
         return tf.py_function(load_img, [x, y], [tf.float32, tf.int32])
 
-    dataset = dataset.map(
-        get_img, num_parallel_calls=tf.data.experimental.AUTOTUNE
-    )
+    dataset = dataset.map(get_img,
+                          num_parallel_calls=tf.data.experimental.AUTOTUNE)
     return dataset
 
 
@@ -68,5 +67,8 @@ def deserialize(ex):
 
 def test_load(base_dir, **kwargs):
     return tf.data.TFRecordDataset(
-        base_dir, num_parallel_reads=-1
-    ).map(deserialize).map(lambda x: (x["x"], x["y"]))
+        base_dir,
+        num_parallel_reads=-1).map(deserialize).map(lambda x: (x["x"], x["y"]))
+
+
+# def test_load()

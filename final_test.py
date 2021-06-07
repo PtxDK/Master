@@ -44,43 +44,43 @@ for i in range(3):
     # base.batch_size = 64
     # base.setup(True)
     # base.evaluate()
-    base = BaseModelTraining(keras.Sequential([
-        keras.Input(shape=(128, 128, 1)),
-        RobustScaler(),
-        UNet(2,
-             depth=4,
-             dim=128,
-             out_activation="softmax",
-             complexity_factor=2)
-    ]),
-                             f"base-data-robust-{i}")
-    base.batch_size = 64
-    base.setup(True)
-    base.evaluate(True)
-    base3D = BaseModelTraining(
-        UNet3D(2, dim=112, out_activation="softmax"), name=f"pad-data-{i}", full=True
-    )
-    base3D.batch_size = 1
-    base3D.setup(True)
-    base3D.evaluate(True)
-    base3D = BaseModelTraining(
-        UNet3D(2, dim=96, out_activation="softmax"), name=f"shrink-data-{i}", full=True
-    )
-    base3D.batch_size = 1
-    base3D.setup(True)
-    base3D.evaluate(True)
-    base3D = BaseModelTraining(
-        UNet3D(2, dim=96, out_activation="softmax"), name=f"hyper-1-data-{i}", full=True
-    )
-    base3D.batch_size = 1
-    base3D.setup(True)
-    base3D.evaluate(True)
-    base3D = BaseModelTraining(
-        UNet3D(2, dim=96, depth=4, out_activation="softmax"), name=f"hyper-2-data-{i}", full=True
-    )
-    base3D.batch_size = 1
-    base3D.setup(True)
-    base3D.evaluate(True)
+    # base = BaseModelTraining(keras.Sequential([
+    #     keras.Input(shape=(128, 128, 1)),
+    #     RobustScaler(),
+    #     UNet(2,
+    #          depth=4,
+    #          dim=128,
+    #          out_activation="softmax",
+    #          complexity_factor=2)
+    # ]),
+    #                          f"base-data-robust-{i}")
+    # base.batch_size = 64
+    # base.setup(True)
+    # base.evaluate(True)
+    # base3D = BaseModelTraining(
+    #     UNet3D(2, dim=112, out_activation="softmax"), name=f"pad-data-{i}", full=True
+    # )
+    # base3D.batch_size = 1
+    # base3D.setup(True)
+    # base3D.evaluate(True)
+    # base3D = BaseModelTraining(
+    #     UNet3D(2, dim=96, out_activation="softmax"), name=f"shrink-data-{i}", full=True
+    # )
+    # base3D.batch_size = 1
+    # base3D.setup(True)
+    # base3D.evaluate(True)
+    # base3D = BaseModelTraining(
+    #     UNet3D(2, dim=96, out_activation="softmax"), name=f"hyper-1-data-{i}", full=True
+    # )
+    # base3D.batch_size = 1
+    # base3D.setup(True)
+    # base3D.evaluate(True)
+    # base3D = BaseModelTraining(
+    #     UNet3D(2, dim=96, depth=4, out_activation="softmax"), name=f"hyper-2-data-{i}", full=True
+    # )
+    # base3D.batch_size = 1
+    # base3D.setup(True)
+    # base3D.evaluate(True)
     base3D = BaseModelTraining(keras.Sequential(
         [keras.Input(shape=(112, 112, 112, 1)),
             RobustScaler(),

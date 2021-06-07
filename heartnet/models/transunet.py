@@ -6,6 +6,7 @@ University of Copenhagen
 November 2017
 """
 
+from heartnet.layers.patches import *
 from mpunet.logging import ScreenLogger
 from mpunet.utils.conv_arithmetics import compute_receptive_fields
 
@@ -15,237 +16,332 @@ from tensorflow.keras.layers import Input, BatchNormalization, Cropping2D, \
                                     Concatenate, Conv2D, MaxPooling2D, \
                                     UpSampling2D, Reshape
 import numpy as np
+import tensorflow as tf
+from tensorflow.keras import layers
+from tensorflow import keras
+import tensorflow_addons as tfa
+# mlp_head_units = [2048, 1024]
 
 
-class UNet(Model):
-    """
-    2D UNet implementation with batch normalization and complexity factor adj.
+def mlp(x, hidden_units, dropout_rate):
+    for units in hidden_units:
+        x = layers.Dense(units, activation=tf.nn.gelu)(x)
+        x = layers.Dropout(dropout_rate)(x)
+    return x
 
-    See original paper at http://arxiv.org/abs/1505.04597
-    """
-    def __init__(self,
-                 n_classes,
-                 img_rows=None,
-                 img_cols=None,
-                 dim=None,
-                 n_channels=1,
-                 depth=4,
-                 out_activation="softmax",
-                 activation="relu",
-                 kernel_size=3,
-                 padding="same",
-                 complexity_factor=1,
-                 flatten_output=False,
-                 l2_reg=None,
-                 logger=None,
-                 **kwargs):
-        """
-        n_classes (int):
-            The number of classes to model, gives the number of filters in the
-            final 1x1 conv layer.
-        img_rows, img_cols (int, int):
-            Image dimensions. Note that depending on image dims cropping may
-            be necessary. To avoid this, use image dimensions DxD for which
-            D * (1/2)^n is an integer, where n is the number of (2x2)
-            max-pooling layers; in this implementation 4.
-            For n=4, D \in {..., 192, 208, 224, 240, 256, ...} etc.
-        dim (int):
-            img_rows and img_cols will both be set to 'dim'
-        n_channels (int):
-            Number of channels in the input image.
-        depth (int):
-            Number of conv blocks in encoding layer (number of 2x2 max pools)
-            Note: each block doubles the filter count while halving the spatial
-            dimensions of the features.
-        out_activation (string):
-            Activation function of output 1x1 conv layer. Usually one of
-            'softmax', 'sigmoid' or 'linear'.
-        activation (string):
-            Activation function for convolution layers
-        kernel_size (int):
-            Kernel size for convolution layers
-        padding (string):
-            Padding type ('same' or 'valid')
-        complexity_factor (int/float):
-            Use int(N * sqrt(complexity_factor)) number of filters in each
-            2D convolution layer instead of default N.
-        flatten_output (bool):
-            Flatten the output to array of shape [batch_size, -1, n_classes]
-        l2_reg (float in [0, 1])
-            L2 regularization on Conv2D weights
-        logger (mpunet.logging.Logger | ScreenLogger):
-            MutliViewUNet.Logger object, logging to files or screen.
-        """
-        # super(UNet, self).__init__()
-        if not ((img_rows and img_cols) or dim):
-            raise ValueError("Must specify either img_rows and img_col or dim")
-        if dim:
-            img_rows, img_cols = dim, dim
 
-        # Set logger or standard print wrapper
-        self.logger = logger or ScreenLogger()
+def create_transformer_module(num_transformers, num_heads, projection_dim,
+                              transformer_units):
 
-        # Set various attributes
-        self.img_shape = (img_rows, img_cols, n_channels)
+    # input_shape: [1, latent_dim, projection_dim]
+    inputs = layers.Input(shape=(None, projection_dim))
+
+    x0 = inputs
+    # Create multiple layers of the Transformer block.
+    for _ in range(num_transformers):
+        # Layer normalization 1.
+        x1 = layers.LayerNormalization(epsilon=1e-6)(inputs)
+        # Create a multi-head attention layer.
+        attention_output = tfa.layers.MultiHeadAttention(num_heads=num_heads,
+                                                     head_size=projection_dim,
+                                                     dropout=0.1)(x1, x1)
+        # Skip connection 1.
+        x2 = layers.Add()([attention_output, encoded_patches])
+        # Layer normalization 2.
+        x3 = layers.LayerNormalization(epsilon=1e-6)(x2)
+        # MLP.
+        x3 = mlp(x3, hidden_units=transformer_units, dropout_rate=0.1)
+        # Skip connection 2.
+        encoded_patches = layers.Add()([x3, x2])
+
+    # Create the Keras model.
+    model = keras.Model(inputs=inputs, outputs=x0)
+    return model
+
+
+class TransUnet(Model):
+    def __init__(
+        self,
+        n_classes,
+        input_shape,
+        patch_size,
+        projection_dim,
+        num_heads,
+        num_transformer_blocks,
+        ffn_units,
+        dropout_rate,
+        num_iterations,
+        classifier_units,
+    ):
+        super(TransUnet, self).__init__()
         self.n_classes = n_classes
-        self.cf = np.sqrt(complexity_factor)
-        self.kernel_size = kernel_size
-        self.activation = activation
-        self.out_activation = out_activation
-        self.l2_reg = l2_reg
-        self.padding = padding
-        self.depth = depth
-        self.flatten_output = flatten_output
+        # self.input_shape = input_shape
 
-        # Shows the number of pixels cropped of the input image to the output
-        self.label_crop = np.array([[0, 0], [0, 0]])
+        self.data_dim = input_shape
+        self.patch_size = patch_size
+        self.projection_dim = projection_dim
+        self.num_heads = num_heads
+        self.num_transformer_blocks = num_transformer_blocks
+        self.ffn_units = ffn_units
+        self.dropout_rate = dropout_rate
+        self.num_iterations = num_iterations
+        self.classifier_units = classifier_units
 
-        # Build model and init base keras Model class
-        super().__init__(*self.init_model())
+    def build(self, input_shape):
 
-        # Compute receptive field
-        names = [x.__class__.__name__ for x in self.layers]
-        index = names.index("UpSampling2D")
-        self.receptive_field = compute_receptive_fields(self.layers[:index])[-1][-1]
+        # Create patching module.
+        self.patcher = Patches(self.patch_size)
 
-        # Log the model definition
-        self.log()
+        # Create patch encoder.
+        self.patch_encoder = PatchEncoder(self.data_dim, self.projection_dim)
 
-    def _create_encoder(self, in_, init_filters, kernel_reg=None,
-                        name="encoder"):
-        filters = init_filters
-        residual_connections = []
-        for i in range(self.depth):
-            l_name = name + "_L%i" % i
-            conv = Conv2D(int(filters * self.cf), self.kernel_size,
-                          activation=self.activation, padding=self.padding,
-                          kernel_regularizer=kernel_reg,
-                          name=l_name + "_conv1")(in_)
-            conv = Conv2D(int(filters * self.cf), self.kernel_size,
-                          activation=self.activation, padding=self.padding,
-                          kernel_regularizer=kernel_reg,
-                          name=l_name + "_conv2")(conv)
-            bn = BatchNormalization(name=l_name + "_BN")(conv)
-            in_ = MaxPooling2D(pool_size=(2, 2), name=l_name + "_pool")(bn)
+        # Create Transformer module.
+        self.transformer = create_transformer_module(
+            self.num_transformer_blocks, self.num_heads, self.projection_dim, [
+                self.projection_dim * 2,
+                self.projection_dim,
+            ])
 
-            # Update filter count and add bn layer to list for residual conn.
-            filters *= 2
-            residual_connections.append(bn)
-        return in_, residual_connections, filters
+        super().build(input_shape)
 
-    def _create_bottom(self, in_, filters, kernel_reg=None, name="bottom"):
-        conv = Conv2D(int(filters * self.cf), self.kernel_size,
-                      activation=self.activation, padding=self.padding,
-                      kernel_regularizer=kernel_reg,
-                      name=name + "_conv1")(in_)
-        conv = Conv2D(int(filters * self.cf), self.kernel_size,
-                      activation=self.activation, padding=self.padding,
-                      kernel_regularizer=kernel_reg,
-                      name=name + "_conv2")(conv)
-        bn = BatchNormalization(name=name + "_BN")(conv)
-        return bn
+    def call(self, x):
+        patches = self.patcher(x)
+        # Encode patches.
+        encoded_patches = self.patch_encoder(patches)
+        # Prepare cross-attention inputs.
+        
+        return self.transformer(encoded_patches)
 
-    def _create_upsample(self, in_, res_conns, filters, kernel_reg=None,
-                         name="upsample"):
-        residual_connections = res_conns[::-1]
-        for i in range(self.depth):
-            l_name = name + "_L%i" % i
-            # Reduce filter count
-            filters /= 2
 
-            # Up-sampling block
-            # Note: 2x2 filters used for backward comp, but you probably
-            # want to use 3x3 here instead.
-            up = UpSampling2D(size=(2, 2), name=l_name + "_up")(in_)
-            conv = Conv2D(int(filters * self.cf), 2,
-                          activation=self.activation,
-                          padding=self.padding, kernel_regularizer=kernel_reg,
-                          name=l_name + "_conv1")(up)
-            bn = BatchNormalization(name=l_name + "_BN1")(conv)
+# class UNet(Model):
+#     """
+#     2D UNet implementation with batch normalization and complexity factor adj.
 
-            # Crop and concatenate
-            cropped_res = self.crop_nodes_to_match(residual_connections[i], bn)
-            merge = Concatenate(axis=-1,
-                                name=l_name + "_concat")([cropped_res, bn])
+#     See original paper at http://arxiv.org/abs/1505.04597
+#     """
+#     def __init__(self,
+#                  n_classes,
+#                  img_rows=None,
+#                  img_cols=None,
+#                  dim=None,
+#                  n_channels=1,
+#                  depth=4,
+#                  out_activation="softmax",
+#                  activation="relu",
+#                  kernel_size=3,
+#                  padding="same",
+#                  complexity_factor=1,
+#                  flatten_output=False,
+#                  l2_reg=None,
+#                  logger=None,
+#                  **kwargs):
+#         """
+#         n_classes (int):
+#             The number of classes to model, gives the number of filters in the
+#             final 1x1 conv layer.
+#         img_rows, img_cols (int, int):
+#             Image dimensions. Note that depending on image dims cropping may
+#             be necessary. To avoid this, use image dimensions DxD for which
+#             D * (1/2)^n is an integer, where n is the number of (2x2)
+#             max-pooling layers; in this implementation 4.
+#             For n=4, D \in {..., 192, 208, 224, 240, 256, ...} etc.
+#         dim (int):
+#             img_rows and img_cols will both be set to 'dim'
+#         n_channels (int):
+#             Number of channels in the input image.
+#         depth (int):
+#             Number of conv blocks in encoding layer (number of 2x2 max pools)
+#             Note: each block doubles the filter count while halving the spatial
+#             dimensions of the features.
+#         out_activation (string):
+#             Activation function of output 1x1 conv layer. Usually one of
+#             'softmax', 'sigmoid' or 'linear'.
+#         activation (string):
+#             Activation function for convolution layers
+#         kernel_size (int):
+#             Kernel size for convolution layers
+#         padding (string):
+#             Padding type ('same' or 'valid')
+#         complexity_factor (int/float):
+#             Use int(N * sqrt(complexity_factor)) number of filters in each
+#             2D convolution layer instead of default N.
+#         flatten_output (bool):
+#             Flatten the output to array of shape [batch_size, -1, n_classes]
+#         l2_reg (float in [0, 1])
+#             L2 regularization on Conv2D weights
+#         logger (mpunet.logging.Logger | ScreenLogger):
+#             MutliViewUNet.Logger object, logging to files or screen.
+#         """
+#         # super(UNet, self).__init__()
+#         if not ((img_rows and img_cols) or dim):
+#             raise ValueError("Must specify either img_rows and img_col or dim")
+#         if dim:
+#             img_rows, img_cols = dim, dim
 
-            conv = Conv2D(int(filters * self.cf), self.kernel_size,
-                          activation=self.activation, padding=self.padding,
-                          kernel_regularizer=kernel_reg,
-                          name=l_name + "_conv2")(merge)
-            conv = Conv2D(int(filters * self.cf), self.kernel_size,
-                          activation=self.activation, padding=self.padding,
-                          kernel_regularizer=kernel_reg,
-                          name=l_name + "_conv3")(conv)
-            in_ = BatchNormalization(name=l_name + "_BN2")(conv)
-        return in_
+#         # Set logger or standard print wrapper
+#         self.logger = logger or ScreenLogger()
 
-    def init_model(self):
-        """
-        Build the UNet model with the specified input image shape.
-        """
-        inputs = Input(shape=self.img_shape)
+#         # Set various attributes
+#         self.img_shape = (img_rows, img_cols, n_channels)
+#         self.n_classes = n_classes
+#         self.cf = np.sqrt(complexity_factor)
+#         self.kernel_size = kernel_size
+#         self.activation = activation
+#         self.out_activation = out_activation
+#         self.l2_reg = l2_reg
+#         self.padding = padding
+#         self.depth = depth
+#         self.flatten_output = flatten_output
 
-        # Apply regularization if not None or 0
-        kr = regularizers.l2(self.l2_reg) if self.l2_reg else None
+#         # Shows the number of pixels cropped of the input image to the output
+#         self.label_crop = np.array([[0, 0], [0, 0]])
 
-        """
-        Encoding path
-        """
-        in_, residual_cons, filters = self._create_encoder(in_=inputs,
-                                                           init_filters=64,
-                                                           kernel_reg=kr)
+#         # Build model and init base keras Model class
+#         super().__init__(*self.init_model())
 
-        """
-        Bottom (no max-pool)
-        """
-        bn = self._create_bottom(in_, filters, kr)
+#         # Compute receptive field
+#         names = [x.__class__.__name__ for x in self.layers]
+#         index = names.index("UpSampling2D")
+#         self.receptive_field = compute_receptive_fields(self.layers[:index])[-1][-1]
 
-        """
-        Up-sampling
-        """
-        bn = self._create_upsample(bn, residual_cons, filters, kr)
+#         # Log the model definition
+#         self.log()
 
-        """
-        Output modeling layer
-        """
-        out = Conv2D(self.n_classes, 1, activation=self.out_activation)(bn)
-        if self.flatten_output:
-            out = Reshape([self.img_shape[0]*self.img_shape[1],
-                           self.n_classes], name='flatten_output')(out)
+#     def _create_encoder(self, in_, init_filters, kernel_reg=None,
+#                         name="encoder"):
+#         filters = init_filters
+#         residual_connections = []
+#         for i in range(self.depth):
+#             l_name = name + "_L%i" % i
+#             conv = Conv2D(int(filters * self.cf), self.kernel_size,
+#                           activation=self.activation, padding=self.padding,
+#                           kernel_regularizer=kernel_reg,
+#                           name=l_name + "_conv1")(in_)
+#             conv = Conv2D(int(filters * self.cf), self.kernel_size,
+#                           activation=self.activation, padding=self.padding,
+#                           kernel_regularizer=kernel_reg,
+#                           name=l_name + "_conv2")(conv)
+#             bn = BatchNormalization(name=l_name + "_BN")(conv)
+#             in_ = MaxPooling2D(pool_size=(2, 2), name=l_name + "_pool")(bn)
 
-        return [inputs], [out]
+#             # Update filter count and add bn layer to list for residual conn.
+#             filters *= 2
+#             residual_connections.append(bn)
+#         return in_, residual_connections, filters
 
-    def crop_nodes_to_match(self, node1, node2):
-        """
-        If necessary, applies Cropping2D layer to node1 to match shape of node2
-        """
-        s1 = np.array(node1.get_shape().as_list())[1:-1]
-        s2 = np.array(node2.get_shape().as_list())[1:-1]
+#     def _create_bottom(self, in_, filters, kernel_reg=None, name="bottom"):
+#         conv = Conv2D(int(filters * self.cf), self.kernel_size,
+#                       activation=self.activation, padding=self.padding,
+#                       kernel_regularizer=kernel_reg,
+#                       name=name + "_conv1")(in_)
+#         conv = Conv2D(int(filters * self.cf), self.kernel_size,
+#                       activation=self.activation, padding=self.padding,
+#                       kernel_regularizer=kernel_reg,
+#                       name=name + "_conv2")(conv)
+#         bn = BatchNormalization(name=name + "_BN")(conv)
+#         return bn
 
-        if np.any(s1 != s2):
-            c = (s1 - s2).astype(np.int)
-            cr = np.array([c//2, c//2]).T
-            cr[:, 1] += c % 2
-            cropped_node1 = Cropping2D(cr)(node1)
-            self.label_crop += cr
-        else:
-            cropped_node1 = node1
+#     def _create_upsample(self, in_, res_conns, filters, kernel_reg=None,
+#                          name="upsample"):
+#         residual_connections = res_conns[::-1]
+#         for i in range(self.depth):
+#             l_name = name + "_L%i" % i
+#             # Reduce filter count
+#             filters /= 2
 
-        return cropped_node1
+#             # Up-sampling block
+#             # Note: 2x2 filters used for backward comp, but you probably
+#             # want to use 3x3 here instead.
+#             up = UpSampling2D(size=(2, 2), name=l_name + "_up")(in_)
+#             conv = Conv2D(int(filters * self.cf), 2,
+#                           activation=self.activation,
+#                           padding=self.padding, kernel_regularizer=kernel_reg,
+#                           name=l_name + "_conv1")(up)
+#             bn = BatchNormalization(name=l_name + "_BN1")(conv)
 
-    def log(self):
-        self.logger("UNet Model Summary\n------------------")
-        self.logger("Image rows:        %i" % self.img_shape[0])
-        self.logger("Image cols:        %i" % self.img_shape[1])
-        self.logger("Image channels:    %i" % self.img_shape[2])
-        self.logger("N classes:         %i" % self.n_classes)
-        self.logger("CF factor:         %.3f" % self.cf**2)
-        self.logger("Depth:             %i" % self.depth)
-        self.logger("l2 reg:            %s" % self.l2_reg)
-        self.logger("Padding:           %s" % self.padding)
-        self.logger("Conv activation:   %s" % self.activation)
-        self.logger("Out activation:    %s" % self.out_activation)
-        self.logger("Receptive field:   %s" % self.receptive_field)
-        self.logger("N params:          %i" % self.count_params())
-        self.logger("Output:            %s" % self.output)
-        self.logger("Crop:              %s" % (self.label_crop if np.sum(self.label_crop) != 0 else "None"))
+#             # Crop and concatenate
+#             cropped_res = self.crop_nodes_to_match(residual_connections[i], bn)
+#             merge = Concatenate(axis=-1,
+#                                 name=l_name + "_concat")([cropped_res, bn])
+
+#             conv = Conv2D(int(filters * self.cf), self.kernel_size,
+#                           activation=self.activation, padding=self.padding,
+#                           kernel_regularizer=kernel_reg,
+#                           name=l_name + "_conv2")(merge)
+#             conv = Conv2D(int(filters * self.cf), self.kernel_size,
+#                           activation=self.activation, padding=self.padding,
+#                           kernel_regularizer=kernel_reg,
+#                           name=l_name + "_conv3")(conv)
+#             in_ = BatchNormalization(name=l_name + "_BN2")(conv)
+#         return in_
+
+#     def init_model(self):
+#         """
+#         Build the UNet model with the specified input image shape.
+#         """
+#         inputs = Input(shape=self.img_shape)
+
+#         # Apply regularization if not None or 0
+#         kr = regularizers.l2(self.l2_reg) if self.l2_reg else None
+
+#         """
+#         Encoding path
+#         """
+#         in_, residual_cons, filters = self._create_encoder(in_=inputs,
+#                                                            init_filters=64,
+#                                                            kernel_reg=kr)
+
+#         """
+#         Bottom (no max-pool)
+#         """
+#         bn = self._create_bottom(in_, filters, kr)
+
+#         """
+#         Up-sampling
+#         """
+#         bn = self._create_upsample(bn, residual_cons, filters, kr)
+
+#         """
+#         Output modeling layer
+#         """
+#         out = Conv2D(self.n_classes, 1, activation=self.out_activation)(bn)
+#         if self.flatten_output:
+#             out = Reshape([self.img_shape[0]*self.img_shape[1],
+#                            self.n_classes], name='flatten_output')(out)
+
+#         return [inputs], [out]
+
+#     def crop_nodes_to_match(self, node1, node2):
+#         """
+#         If necessary, applies Cropping2D layer to node1 to match shape of node2
+#         """
+#         s1 = np.array(node1.get_shape().as_list())[1:-1]
+#         s2 = np.array(node2.get_shape().as_list())[1:-1]
+
+#         if np.any(s1 != s2):
+#             c = (s1 - s2).astype(np.int)
+#             cr = np.array([c//2, c//2]).T
+#             cr[:, 1] += c % 2
+#             cropped_node1 = Cropping2D(cr)(node1)
+#             self.label_crop += cr
+#         else:
+#             cropped_node1 = node1
+
+#         return cropped_node1
+
+#     def log(self):
+#         self.logger("UNet Model Summary\n------------------")
+#         self.logger("Image rows:        %i" % self.img_shape[0])
+#         self.logger("Image cols:        %i" % self.img_shape[1])
+#         self.logger("Image channels:    %i" % self.img_shape[2])
+#         self.logger("N classes:         %i" % self.n_classes)
+#         self.logger("CF factor:         %.3f" % self.cf**2)
+#         self.logger("Depth:             %i" % self.depth)
+#         self.logger("l2 reg:            %s" % self.l2_reg)
+#         self.logger("Padding:           %s" % self.padding)
+#         self.logger("Conv activation:   %s" % self.activation)
+#         self.logger("Out activation:    %s" % self.out_activation)
+#         self.logger("Receptive field:   %s" % self.receptive_field)
+#         self.logger("N params:          %i" % self.count_params())
+#         self.logger("Output:            %s" % self.output)
+#         self.logger("Crop:              %s" % (self.label_crop if np.sum(self.label_crop) != 0 else "None"))
